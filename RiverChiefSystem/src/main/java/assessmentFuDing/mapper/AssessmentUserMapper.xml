@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="assessmentFuDing.mapper.AssessmentUserMapper">
+   <!-- 角色信息列表查询 start -->
+    <select id="querySelectedRegion" resultType = "common.model.UserBasisInfo">
+   	SELECT
+    a.user_id AS "userId",
+    a.real_name AS "realName"
+    FROM user a 
+    LEFT JOIN user_role_relation urr ON urr.user_id = a.user_id
+    WHERE urr.role_id = 5
+    <if test="list != null ">
+    	AND  
+    	<foreach collection="list" item="item" index="index"   open="(" separator="or" close=")"> 
+			a.region_id LIKE #{item}
+    	</foreach>
+    </if>
+    ORDER BY a.region_id
+    </select>
+    
+    <select id="queryUsersPatrolInfo" resultType ="common.model.UserPatrolInfo">
+    SELECT u.user_id AS "userId",e.days,f.times,f.sum_mileage AS "mileage",g.event_num AS "eventNum",u.real_name AS "realName"
+	FROM `user` u 
+	LEFT JOIN
+	(
+		SELECT b.user_id,count(*) AS days FROM (
+			SELECT a.user_id,DATE_FORMAT(a.submit_time,'%Y-%m-%d') AS oneday 
+			FROM patrol_record a
+			WHERE a.user_id IN 
+			<foreach item="item" index="index" collection="list"  open="(" separator="," close=")"> #{item}</foreach>  
+			AND a.record_status =1 
+			GROUP BY a.user_id,oneday 
+		) b 
+		WHERE  b.oneday &gt;= #{startTime} AND  b.oneday &lt; #{endTime}
+		GROUP BY b.user_id
+	) e ON u.user_id = e.user_id
+	LEFT JOIN
+	(
+		SELECT c.user_id,count(*) AS times,IFNULL(SUM(cast(c.total_mileage as DECIMAL(10,2))),'0') AS sum_mileage
+		FROM patrol_record c
+		WHERE c.user_id IN  
+		<foreach item="item" index="index" collection="list"  open="(" separator="," close=")"> #{item}</foreach> 
+		AND c.submit_time &gt;= #{startTime} AND  c.submit_time &lt; #{endTime} AND c.record_status=1
+		GROUP BY c.user_id
+	) f ON f.user_id = e.user_id
+	LEFT JOIN
+	(
+		SELECT d.user_id,COUNT(*) AS event_num FROM event d 
+		WHERE d.user_id IN 
+		<foreach item="item" index="index" collection="list"  open="(" separator="," close=")"> #{item}</foreach>  
+		AND d.event_time &gt;= #{startTime} AND  d.event_time &lt; #{endTime} AND d.event_status =1
+		GROUP BY d.user_id
+	) g  ON e.user_id = g.user_id
+	WHERE u.user_id IN <foreach item="item" index="index" collection="list"  open="(" separator="," close=")"> #{item}</foreach>
+    </select>
+    <!-- 角色信息列表查询 end  -->
+</mapper>

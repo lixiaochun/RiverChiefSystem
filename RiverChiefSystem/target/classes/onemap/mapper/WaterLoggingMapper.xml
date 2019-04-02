@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- WATERLOGGING -->
+<mapper namespace="onemap.mapper.WaterLoggingMapper">
+
+    <!-- 表所有字段 -->
+    <sql id="allColumns">
+        WATER_LOGGING_ID, LONGITUTE, LATITUDE, NAME, REGION_ID, RIVER_ID
+    </sql>
+    
+    <!-- 根据code、regionId、riverId查询点坐标数据 -->
+    <select id="findWaterLoggingAll" resultType="map" parameterType="map">
+        SELECT
+		WATER_LOGGING_ID as id, LONGITUTE as x, LATITUDE as y
+        FROM WATER_LOGGING WHERE 1=1
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        <if test="riverId != null and riverId != ''">
+            AND RIVER_ID LIKE CONCAT( #{riverId},'%')
+        </if>
+    </select>
+    
+	<!-- 根据id查询详细数据 -->
+    <select id="findWaterLoggingById" resultType="map" parameterType="int">
+        SELECT *,CONCAT( LONGITUTE,',',LATITUDE) as point,
+        (SELECT region_name FROM region WHERE region.region_id=WATER_LOGGING.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=WATER_LOGGING.river_id) AS river_name
+        FROM WATER_LOGGING WHERE WATER_LOGGING_ID = #{watterloggingId}
+    </select>
+    
+    <!-- 根据code、regionId分页查询详细数据列表 -->
+    <select id="findWaterLoggingByPage" resultType="map" parameterType="map">
+        SELECT *,WATER_LOGGING_ID as id,
+        (SELECT region_name FROM region WHERE region.region_id=WATER_LOGGING.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=WATER_LOGGING.river_id) AS river_name
+        FROM WATER_LOGGING WHERE 1=1
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        LIMIT ${curPage},${pageNumber}
+    </select>
+    
+    <!-- 获取分页查询详情 count总数 page总页数-->
+    <select id="getPagingInformation" resultType="map" parameterType="map">
+		SELECT COUNT(*) AS count,CEILING(COUNT(*)/${pageNumber}) AS page FROM WATER_LOGGING WHERE 1=1
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+	</select>
+    
+    <select id="findMaxId" resultType="int" parameterType="int">
+        SELECT IFNULL(max(WATER_LOGGING_ID),0) from WATER_LOGGING
+    </select>
+    
+     <!-- 插入数据 -->
+    <insert id="insertWaterLogging" parameterType="map">
+        INSERT INTO WATER_LOGGING (<include refid="allColumns" />)
+        VALUES (
+            #{id},
+            #{longitute},
+            #{latitude},
+            #{name},
+            #{regionId},
+            #{riverId}
+        )
+    </insert>
+    
+    <!-- 修改数据 -->
+    <update id="updateWaterLogging" parameterType="map">
+        UPDATE WATER_LOGGING SET
+            LONGITUTE = #{longitute},
+            LATITUDE = #{latitude},
+            NAME = #{name},
+            REGION_ID = #{regionId},
+            RIVER_ID = #{riverId}
+        WHERE WATER_LOGGING_ID = #{id}
+    </update>
+    
+    <!-- 根据主键删除数据 -->
+    <delete id="deleteWaterLoggingById" parameterType="int">
+        DELETE FROM WATER_LOGGING WHERE WATER_LOGGING_ID = #{waterLoggingId}
+    </delete>
+    
+</mapper>

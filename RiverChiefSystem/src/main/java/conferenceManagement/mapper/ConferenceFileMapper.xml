@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+ <mapper namespace="conferenceManagement.mapper.ConferenceFileMapper">
+ 
+ 	<!-- 会议文件 -->
+	<resultMap type="common.model.ConferenceFile" id="conferenceFile">
+	 	<id column="conference_file_id" property="conferenceFileId" />
+        <result column="conference_id" property="conferenceId" />
+        <result column="file_name" property="fileName" />
+        <result column="file_url" property="fileUrl" />
+        <result column="type" property="type" />
+        <result column="status" property="status" />
+        <result column="small_url" property="smallUrl" />
+        <result column="remark" property="remark" />
+    </resultMap>
+ 
+ 	<insert id="insertConferenceFile">
+ 		<selectKey resultType="java.lang.Integer" keyProperty="id" order="AFTER">
+			SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO conference_file(conference_id ,file_name , file_url ,
+		type , status , small_url , remark)
+		values
+		<foreach collection="list" item="conferenceFile" index="index" separator=",">
+		(
+			#{conferenceFile.conferenceId, jdbcType = INTEGER},
+			#{conferenceFile.fileName, jdbcType = VARCHAR},
+			#{conferenceFile.fileUrl, jdbcType = VARCHAR},
+			#{conferenceFile.type, jdbcType = VARCHAR},
+			#{conferenceFile.status, jdbcType = INTEGER},
+			#{conferenceFile.smallUrl, jdbcType = VARCHAR},
+			#{conferenceFile.remark, jdbcType = VARCHAR}
+		)
+		</foreach>
+ 	</insert>
+ 	
+ 	<select id="queryFile" resultMap="conferenceFile" parameterType="java.util.Map">
+ 		select * from conference_file 
+ 		<where>
+ 			<if test="conferenceId!=null and conferenceId!=''">
+ 				and conference_id = #{conferenceId}
+ 			</if>
+ 			<if test="conferenceFileId!=null and conferenceFileId!=''">
+ 				and conference_file_id = #{conferenceFileId}
+ 			</if>
+ 			<if test="type!=null and type!=''">
+ 				and type = #{type}
+ 			</if>
+ 			and status=1
+ 		</where>
+ 	</select>
+ 	
+ 	<update id="updateConferenceFile" parameterType="java.util.Map">
+    	update conference_file 	
+    	<trim prefix="set" suffixOverrides=",">
+  		<if test="status!=null">status = #{status, jdbcType = INTEGER} ,</if>
+ 		</trim>
+    	where conference_file_id = #{conferenceFileId}
+    </update>
+ </mapper>

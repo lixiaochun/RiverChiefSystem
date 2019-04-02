@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+ <mapper namespace="statisticalform.mapper.StatisticalPatrolMapper">
+ 	 <resultMap type="common.model.Statistics" id="statistics">
+        <result column="pt" property="pt" />
+        <result column="count" property="count" />
+        <result column="percent" property="percent" />
+        <result column="problemTypeName" property="problemTypeName" />
+        <result column="regionId" property="regionId" />
+        <result column="regionName" property="regionName" />
+        <result column="reportTypeName" property="reportTypeName" />
+        <result column="date" property="date" />
+        <result column="dateType" property="dateType" />
+        <result column="patrolSum" property="patrolSum" />
+        <result column="completeSum" property="completeSum" />
+        <result column="patrolgrade" property="patrolgrade" />
+        <result column="recordGrade" property="recordGrade" />
+    </resultMap>
+    
+ 	<select id="statisticsRiver" resultType="java.lang.Integer" parameterType="java.util.Map">
+ 		select count(*) from river r ,river_region_relation rrr where r.river_id = rrr.river_id and rrr.region_id LIKE 
+			CONCAT('%',(SELECT (
+			CASE WHEN r.level=0 THEN LEFT(region_id,0) 
+			WHEN r.level=1 THEN LEFT(region_id,2)
+			WHEN r.level=2 THEN LEFT(region_id,4)
+			WHEN r.level=3 THEN LEFT(region_id,6)
+			WHEN r.level=4 THEN LEFT(region_id,9)
+			WHEN r.level=5 THEN region_id
+			END)AS region_id
+			FROM region r WHERE region_id LIKE #{regionId}),'%')
+ 	</select>
+ 	
+ 	<select id="statisticsRoleType" resultType="java.lang.Integer" parameterType="java.util.Map">
+ 		select count(u.user_id) from region r , role ro, user u where  ro.role_type=#{roleType} and r.region_id = ro.region_id 
+ 		and u.role_id = ro.role_id and r.region_id like 
+		CONCAT('%',(SELECT (
+			CASE WHEN r.level=0 THEN LEFT(region_id,0) 
+			WHEN r.level=1 THEN LEFT(region_id,2)
+			WHEN r.level=2 THEN LEFT(region_id,4)
+			WHEN r.level=3 THEN LEFT(region_id,6)
+			WHEN r.level=4 THEN LEFT(region_id,9)
+			WHEN r.level=5 THEN region_id
+			END)AS region_id
+			FROM region r WHERE region_id LIKE #{regionId}),'%')
+ 	</select>
+ 	
+ 	<sql id="selectDatyType">
+    	<if test="dateType==1">
+    		<!-- 今日 -->
+    		and date(sl.opera_time) = date(now())
+    	</if>
+    	<if test="dateType==2">
+    		<!-- 本周 -->
+    		and YEARWEEK(date_format(sl.opera_time,'%Y-%m-%d')) = YEARWEEK(now())
+    	</if>
+    	<if test="dateType==3">
+    		<!-- 本月 -->
+    		and DATE_FORMAT( sl.opera_time, '%Y%m' ) = DATE_FORMAT( CURDATE( ) , '%Y%m' )
+    	</if>
+    	<if test="dateType==4">
+    		<!-- 上个月 -->
+    		and PERIOD_DIFF( date_format( now( ) , '%Y%m' ) , date_format( sl.opera_time, '%Y%m' ) ) =1
+    	</if>
+    	<if test="dateType==5">
+    		<!-- 本年度 -->
+    		and YEAR(sl.opera_time)=YEAR(NOW())
+    	</if>
+ 	</sql>
+ 	
+ 	<select id="statisticsLogin" resultMap="statistics" parameterType="java.util.Map">
+ 		select dd.regionId as regionId,dd.regionName as regionName ,if(ep.count is null,0,ep.count) as count from
+		(select region_id as regionId,region_name as regionName from region r 
+		<where>
+		<if test="regionId!=null">
+			and r.parent_id=#{regionId}
+		</if>
+		</where>
+		)dd
+		left join (
+		select count(*) as count,r.region_id as regionId, r.region_name as regionName from system_log sl , user u , region r,role ro,organization o
+		where sl.user_id = u.user_id and r.region_id = o.region_id and ro.role_type=2 and u.organization = o.
+		and ro.role_id=u.role_id
+		<if test="regionId!=null">
+			and r.parent_id=#{regionId}
+		</if>	
+		and sl.opera_interface='login' 
+		<if test="dateType!=null">
+			<include refid="selectDatyType" />
+		</if>
+		GROUP BY(r.region_id)
+		)ep  on ep.regionId= dd.regionId ORDER BY regionId asc
+ 	</select> 
+ 	
+ 	<select id="statisticsNotLogin" resultMap="statistics" parameterType="java.util.Map">
+ 		select dd.regionId as regionId,dd.regionName as regionName ,if(ep.count is null,0,ep.count) as count from
+		(select region_id as regionId,region_name as regionName from region r 
+		<where>
+		<if test="regionId!=null">
+			and r.parent_id=#{regionId}
+		</if>
+		</where>
+		)dd
+		left join (
+		select r.region_id as regionId,r.region_name as regionName,count(*) as count
+		from  user u,region r,role ro where u.user_id not in (
+		select DISTINCT user_id from system_log sl where !(ISNULL(user_id))
+		<if test="dateType!=null">
+			<include refid="selectDatyType" />
+		</if>
+		)and ro.region_id = r.region_id 
+		and ro.role_id=u.role_id  and ro.role_type=2
+		<if test="regionId!=null">
+			and r.parent_id=#{regionId}
+		</if>	
+		GROUP BY(r.region_id)
+		)ep  on ep.regionId= dd.regionId ORDER BY regionId asc
+ 	</select> 
+ 	
+ 	<select id="statisticsPatrolCount" resultMap="statistics" parameterType="java.util.Map">
+ 		SELECT dd.regionId AS regionId, dd.regionName AS regionName,
+		IF (ep.count IS NULL, 0, ep.count) AS count,
+		IF (pp.patrolSum IS NULL,0, pp.patrolSum) AS patrolSum,
+		IF (pp.completeSum IS NULL,0, pp.completeSum) AS completeSum,
+		IF (gp.patrolgrade IS NULL,0, gp.patrolgrade) AS patrolgrade
+		FROM
+		(SELECT region_id AS regionId, region_name AS regionName
+		FROM region	
+		<where>
+		<if test="regionId!=null">
+			and parent_id = #{regionId}
+		</if>
+		</where> )dd
+		LEFT JOIN (
+		SELECT r.region_id AS regionId, r.region_name AS regionName, count(u.user_id) AS count
+		FROM USER u, role ro, region r
+		WHERE ro.region_id = r.region_id AND u.role_id = ro.role_id 
+		<if test="regionId!=null">
+			and parent_id = #{regionId}
+		</if>
+		AND ro.organization_id = u.organization_id GROUP BY r.region_id
+		) ep ON ep.regionId = dd.regionId
+		LEFT JOIN (
+		SELECT r.region_id AS regionId, SUM(p.patrol_num * p.patrol_period) AS patrolSum,
+		SUM(p.complete_num) AS completeSum FROM patrol p, region r
+		WHERE p.region_id = r.region_id 
+		<if test="regionId!=null">
+			and parent_id = #{regionId}
+		</if> 
+		GROUP BY regionId) pp ON pp.regionId = dd.regionId
+		LEFT JOIN (
+		SELECT r.region_id AS regionId, count(u.user_id) AS patrolgrade
+		FROM patrol p,region r,USER u
+		WHERE p.region_id = r.region_id 
+		<if test="regionId!=null">
+			and parent_id = #{regionId}
+		</if> 
+		AND u.user_id = p.patrol_id AND p.grade &lt;= p.now_grade
+		GROUP BY r.region_id
+		) gp ON gp.regionId = dd.regionId
+		ORDER BY regionId ASC
+ 	</select> 
+ 	
+ 	<select id="statisticsPatrolRecord" resultMap="statistics" parameterType="java.util.Map">
+ 		SELECT dd.regionId AS regionId, dd.regionName AS regionName,
+		IF (ep.completeSum IS NULL, 0, ep.completeSum) AS completeSum,
+		IF (pp.recordGrade IS NULL,0, pp.recordGrade) AS recordGrade,
+		IF (CONCAT((pp.recordGrade/ep.completeSum*100),'%') IS NULL,'0.0%', CONCAT((pp.recordGrade/ep.completeSum*100),'%')) AS percent
+		FROM
+		(SELECT region_id AS regionId, region_name AS regionName
+		FROM region	
+		<where>
+		<if test="regionId!=null">
+			and parent_id = #{regionId}
+		</if>
+		</where>) dd
+		LEFT JOIN (
+		select COUNT(pr.patrol_record_id) as completeSum,r.region_id as regionId
+		from patrol p, region r , patrol_record pr where p.region_id = r.region_id 
+		<if test="regionId!=null">
+			and parent_id = #{regionId}
+		</if>
+		and pr.patrol_id = p.patrol_id 
+		GROUP BY r.region_id
+		) ep ON ep.regionId = dd.regionId
+		LEFT JOIN (
+		select COUNT(pr.patrol_record_id) as recordGrade,r.region_id as regionId
+		from patrol p, region r , patrol_record pr where p.region_id = r.region_id 
+		<if test="regionId!=null">
+			and parent_id = #{regionId}
+		</if> 
+		and pr.patrol_id = p.patrol_id and pr.record_status=1
+		GROUP BY r.region_id) pp ON pp.regionId = dd.regionId
+		ORDER BY regionId ASC
+ 	</select> 
+ 	
+ 	<select id="statisticsPatrolRecordByRegionId"  resultType="java.util.Map" parameterType="java.util.Map">
+ 		select IF (pp.completeSum IS NULL, 0, sum(pp.completeSum)) AS completeSum,rrr.region_name as regionName from region rrr 
+		left join (select COUNT(pr.patrol_record_id) as completeSum,r.region_id as regionId
+		from patrol p, region r , patrol_record pr where p.region_id = r.region_id 
+		and pr.patrol_id = p.patrol_id and pr.record_status=1
+		GROUP BY r.region_id)pp on (pp.regionId like 
+		CONCAT((SELECT (
+			CASE WHEN r.level=0 THEN LEFT(region_id,0) 
+			WHEN r.level=1 THEN LEFT(region_id,2)
+			WHEN r.level=2 THEN LEFT(region_id,4)
+			WHEN r.level=3 THEN LEFT(region_id,6)
+			WHEN r.level=4 THEN LEFT(region_id,9)
+			WHEN r.level=5 THEN region_id
+			END)AS region_id
+			FROM region r WHERE region_id LIKE rrr.region_id),'%'))
+		where rrr.parent_id = #{regionId}
+		GROUP BY rrr.region_id 
+		<if test="orderby==null">
+			ORDER BY rrr.region_id
+		</if>
+		<if test="orderby!=null">
+			ORDER BY completeSum desc limit 0,3
+		</if>
+
+ 	</select> 
+ 	
+ 	<select id="statisticsPatrolRecordByRiverId"  resultType="java.util.Map" parameterType="java.util.Map">
+ 		select IF (pp.completeSum IS NULL, 0, SUM(pp.completeSum)) AS completeSum,rrr.river_name as riverName from river rrr 
+		left join (select COUNT(pr.patrol_record_id) as completeSum,r.river_id as riverId
+		from patrol p, river r , patrol_record pr where p.river_id = r.river_id 
+		and pr.patrol_id = p.patrol_id and pr.record_status=1
+		GROUP BY r.river_id)pp on (pp.riverId like 
+		CONCAT((SELECT (
+				CASE WHEN rr.river_level=0 THEN LEFT(river_id,2)
+				WHEN rr.river_level=1 THEN LEFT(river_id,4)
+				WHEN rr.river_level=2 THEN LEFT(river_id,6)
+				WHEN rr.river_level=3 THEN LEFT(river_id,8)
+				WHEN rr.river_level=4 THEN LEFT(river_id,10)
+				WHEN rr.river_level=5 THEN LEFT(river_id,12)
+				WHEN rr.river_level=6 THEN LEFT(river_id,14)
+				END)AS river_id
+				FROM river rr WHERE rr.river_id LIKE rrr.river_id),'%'))
+		where rrr.river_id = #{riverId}
+		GROUP BY rrr.river_id
+		<if test="orderby==null">
+			order by rrr.river_id 
+		</if>
+		<if test="orderby!=null">
+			order by completeSum desc limit 0,3
+		</if>
+
+ 	</select> 
+ 	
+ 	<select id="statisticsPublicsignsByRegionId"  resultType="java.util.Map" parameterType="java.util.Map">
+ 		select IF (pp.count IS NULL, 0, sum(pp.count)) AS count,rrr.region_name as regionName from region rrr 
+		left join (select COUNT(p.publicsigns_id) as count,r.region_id as regionId
+		from publicsigns p, region r where p.region_id = r.region_id 
+		GROUP BY r.region_id)pp on (pp.regionId like 
+		CONCAT((SELECT (
+			CASE WHEN r.level=0 THEN LEFT(region_id,0) 
+			WHEN r.level=1 THEN LEFT(region_id,2)
+			WHEN r.level=2 THEN LEFT(region_id,4)
+			WHEN r.level=3 THEN LEFT(region_id,6)
+			WHEN r.level=4 THEN LEFT(region_id,9)
+			WHEN r.level=5 THEN region_id
+			END)AS region_id
+			FROM region r WHERE region_id LIKE rrr.region_id),'%'))
+		where rrr.parent_id = #{regionId}
+		GROUP BY rrr.region_id ORDER BY rrr.region_id
+ 	</select> 
+ 	
+ 	<select id="statisticsPublicsignsByRiverId"  resultType="java.util.Map" parameterType="java.util.Map">
+ 		select IF (pp.count IS NULL, 0, SUM(pp.count)) AS count,rrr.river_name as riverName from river rrr 
+		left join (select COUNT(p.publicsigns_id) as count,r.river_id as riverId
+		from publicsigns p, river r where p.river_id = r.river_id 
+		GROUP BY r.river_id)pp on (pp.riverId like 
+		CONCAT((SELECT (
+				CASE WHEN rr.river_level=0 THEN LEFT(river_id,2)
+				WHEN rr.river_level=1 THEN LEFT(river_id,4)
+				WHEN rr.river_level=2 THEN LEFT(river_id,6)
+				WHEN rr.river_level=3 THEN LEFT(river_id,8)
+				WHEN rr.river_level=4 THEN LEFT(river_id,10)
+				WHEN rr.river_level=5 THEN LEFT(river_id,12)
+				WHEN rr.river_level=6 THEN LEFT(river_id,14)
+				END)AS river_id
+				FROM river rr WHERE rr.river_id LIKE rrr.river_id),'%'))
+		where rrr.river_id = #{riverId}
+		GROUP BY rrr.river_id
+
+ 	</select> 
+ </mapper>

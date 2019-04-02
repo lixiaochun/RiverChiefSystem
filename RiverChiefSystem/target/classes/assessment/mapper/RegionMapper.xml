@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="assessment.mapper.RegionMapper">
+    <resultMap id="BaseResultMap" type="common.model.Region">
+        <result column="region_id" property="regionId" jdbcType="VARCHAR"/>
+        <result column="region_name" property="regionName" jdbcType="VARCHAR"/>
+        <result column="parent_id" property="parentId" jdbcType="VARCHAR"/>
+        <result column="level" property="level" jdbcType="INTEGER"/>
+        <result column="longitute" property="longitute" jdbcType="VARCHAR"/>
+        <result column="latitude" property="latitude" jdbcType="VARCHAR"/>
+        <result column="remark" property="remark" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT * FROM region ;
+    </select>
+    <select id="selectByParentId" resultType="java.lang.String" parameterType="java.lang.String">
+        SELECT region_id FROM region where parent_id = #{ParentId};
+    </select>
+    <select id="selectByName" resultType="java.lang.String" parameterType="java.lang.String">
+        select region_id FROM region where region_name=#{name};
+    </select>
+    <select id="selectByPrimeryKey" resultMap="BaseResultMap" parameterType="java.lang.String">
+        SELECT * FROM region where region_id=#{regionId};
+    </select>
+    <select id="getListByParent" resultMap="BaseResultMap" parameterType="java.lang.String">
+        SELECT region_id,region_name,level,parent_id FROM region where parent_id=#{parentId};
+    </select>
+    <select id="getTree" resultMap="BaseResultMap" parameterType="java.lang.String">
+        SELECT region_id,region_name,level,parent_id FROM region where region_id like '${parentId}%';
+    </select>
+</mapper>

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context-3.2.xsd
+    http://www.springframework.org/schema/tx
+    http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+    http://www.springframework.org/schema/aop
+    http://www.springframework.org/schema/aop/spring-aop-3.2.xsd
+    http://www.springframework.org/schema/util
+    http://www.springframework.org/schema/util/spring-util-3.2.xsd">
+
+    <bean id="mysqlDataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init"
+        destroy-method="close" >
+        <property name="driverClassName">
+            <value>com.mysql.jdbc.Driver</value>
+        </property>
+        <property name="url">
+            <value>jdbc:mysql://localhost:3306/rcs?useUnicode=true&amp;characterEncoding=utf-8&amp;serverTimezone=GMT</value> 
+        </property>
+        <property name="username">
+            <value>root</value>
+        </property>
+        <property name="password">
+            <value>123gsd</value>
+        </property>
+        <!-- 连接池最大使用连接数 -->
+        <property name="maxActive">
+            <value>20</value>
+        </property>
+        <!-- 初始化连接大小 -->
+        <property name="initialSize">
+            <value>1</value>
+        </property>
+        <!-- 获取连接最大等待时间 -->
+        <property name="maxWait">
+            <value>60000</value>
+        </property>
+        <!-- 连接池最小空闲 -->
+        <property name="minIdle">
+            <value>3</value>
+        </property>
+        <!-- 自动清除无用连接 -->
+        <property name="removeAbandoned">
+            <value>true</value>
+        </property>
+        <!-- 清除无用连接的等待时间 -->
+        <property name="removeAbandonedTimeout">
+            <value>180</value>
+        </property>
+        <!-- 连接属性 -->
+        <property name="connectionProperties">
+            <value>clientEncoding=UTF-8</value>
+        </property>
+    </bean>
+     
+    
+	
+	<bean id="dataSource" class="geojson.controller.DbcontextHolder">
+        <property name="defaultTargetDataSource" ref="mysqlDataSource"/>
+        <property name="targetDataSources">
+            <map>
+                <entry key="mysqlDataSource" value-ref="mysqlDataSource"/>
+               <!--   <entry key="postgresDataSource" value-ref="postgresDataSource"/> -->
+            </map>
+        </property>
+    </bean>
+    
+    <!-- mybatis文件配置，扫描所有mapper文件 -->
+    <bean id="sqlSessionFactory"
+    class="org.mybatis.spring.SqlSessionFactoryBean"
+    p:dataSource-ref="dataSource"
+    p:configLocation="classpath:conf/mybatis-config.xml"
+    /><!-- configLocation为mybatis属性 mapperLocations为所有mapper-->
+    <!-- p:mapperLocations="classpath:/mapper/*.xml"/> --> <!-- configLocation为mybatis属性 mapperLocations为所有mapper-->
+      
+    <!-- spring与mybatis整合配置，扫描所有dao -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer"
+    p:basePackage="*.mapper"
+    p:sqlSessionFactoryBeanName="sqlSessionFactory"/>
+ 
+    <!-- 对数据源进行事务管理 -->
+    <bean id="transactionManager"
+    class="org.springframework.jdbc.datasource.DataSourceTransactionManager"
+    p:dataSource-ref="dataSource"/>
+    
+  <!--   ===========================================以下全是shiro使用的启动项 =========================================== -->
+    
+     <!-- 自定义Realm -->
+    <bean id="myRealm" class="common.util.MyRealm">
+        <property name="credentialsMatcher">
+            <bean class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+                 <property name="hashAlgorithmName" value="MD5"></property><!--  加密算法的名称 -->
+                <property name="hashIterations" value="2"></property> <!-- 配置加密的次数 --> 
+            </bean>
+        </property>
+    </bean>  
+    
+    <!-- 用来获取伴随tomcat启动的配置文件的bean -->
+    <bean class="common.util.SpringContextHolder"  />
+    
+    <!-- 进行缓存的操作配置 --> 
+    <bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager"> 
+    	<property name="cacheManagerConfigFile" value="classpath:conf/ehcache.xml"/> 
+    </bean>
+
+    <!-- 安全管理器 -->
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">  
+       <!--认证管理器-->  
+        <property name="realm" ref="myRealm" />  
+         <property name="cacheManager" ref="cacheManager"/> 
+    </bean>  
+
+    <!-- Shiro过滤器 -->
+    <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">  
+        <!-- Shiro的核心安全接口,这个属性是必须的 -->  
+        <property name="securityManager" ref="securityManager"/>
+        <!-- 身份认证失败，则跳转到登录页面的配置 <property name="loginUrl" value="/login.jsp"/>-->  
+        <!-- 权限认证失败，则跳转到指定页面  <property name="unauthorizedUrl" value="/views/error.jsp"/> -->  
+        <!-- Shiro连接约束配置,即过滤链的定义 -->  
+        <property name="filterChainDefinitions">  
+            <value>  
+                /views=authc
+            </value>  
+        </property>
+    </bean>  
+    
+    
+    <bean  class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">  
+    <property name="exceptionMappings">  
+        <props>    
+            <prop key="org.apache.shiro.authz.UnauthenticatedException">  <!-- 没有登录验证 表示捕获的异常 -->
+                /views/error
+            </prop>  
+            <prop key="org.apache.shiro.authz.UnauthorizedException"><!-- 没有权限验证 表示捕获的异常 -->
+               /views/error
+            </prop>
+        </props>  
+    </property>  
+   </bean> 
+</beans>

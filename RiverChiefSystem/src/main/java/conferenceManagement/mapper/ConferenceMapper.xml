@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="conferenceManagement.mapper.ConferenceMapper">
+	<resultMap type="common.model.Conference" id="conference">
+		<id column="conference_id" property="conferenceId" />
+		<result column="conference_name" property="conferenceName" />
+		<result column="theme" property="theme" />
+		<result column="time" property="time" />
+		<result column="site" property="site" />
+		<result column="advertising_map" property="advertisingMap" />
+		<result column="notice" property="notice" />
+		<result column="announcements" property="announcements" />
+		<result column="contact" property="contact" />
+		<result column="agenda" property="agenda" />
+		<result column="arrangement" property="arrangement" />
+		<result column="manual" property="manual" />
+		<result column="status" property="status" />
+		<result column="step_status" property="stepStatus" />
+		<result column="follow_through" property="followThrough" />		
+		<result column="remark" property="remark" />
+	</resultMap>
+
+	<!-- 查询列表 -->
+	<select id="queryConference" parameterType="java.util.Map" resultMap="conference">
+		select *
+		from conference con
+		<where>
+		<if test="conferenceId!=null">
+			and con.conference_Id=#{conferenceId}
+		</if>
+		<if test="conferenceName!=null and conferenceName!='' and conferenceName!='undefined'.toString()">
+			and con.conference_name like '%${conferenceName}%'
+		</if>
+		<if test="theme!=null and theme!='' and theme!='undefined'.toString()">
+			and con.theme like '%${theme}%'
+		</if>
+		<if test="site!=null and site!='' and site!='undefined'.toString()">
+			and con.site like '%${site}%'
+		</if>
+		<if test="contact!=null and contact!='' and contact!='undefined'.toString()">
+			and con.contact like '%${contact}%'
+		</if>
+		<if test="time!=null">
+			and con.time=#{time}
+		</if>
+		<if test="status!=null">
+			and con.status=#{status}
+		</if>
+		<if test="stepStatus!=null">
+			and con.step_status=#{stepStatus}
+		</if>
+		<if test="followThrough!=null">
+			and con.follow_through=#{followThrough}
+		</if>
+			and con.status!=0
+		</where>
+		<if test="min!=null and pageSize!=null">
+			LIMIT #{min},#{pageSize}
+		</if>	
+	</select>
+	
+	<select id="countConference" resultType="java.lang.Integer" parameterType="java.util.Map">
+    	select count(*) 
+		from conference con
+		<where>
+		<if test="conferenceId!=null">
+			and con.conference_Id=#{conferenceId}
+		</if>
+		<if test="conferenceName!=null and conferenceName!='' and conferenceName!='undefined'.toString()">
+			and con.conference_name like '%${conferenceName}%'
+		</if>
+		<if test="theme!=null and theme!='' and theme!='undefined'.toString()">
+			and con.theme like '%${theme}%'
+		</if>
+		<if test="site!=null and site!='' and site!='undefined'.toString()">
+			and con.site like '%${site}%'
+		</if>
+		<if test="contact!=null and contact!='' and contact!='undefined'.toString()">
+			and con.contact like '%${contact}%'
+		</if>
+		<if test="time!=null">
+			and con.time=#{time}
+		</if>
+		<if test="status!=null">
+			and con.status=#{status}
+		</if>
+		<if test="stepStatus!=null">
+			and con.step_status=#{stepStatus}
+		</if>
+		<if test="followThrough!=null">
+			and con.follow_through=#{followThrough}
+		</if>
+			and con.status!=0
+		</where>		
+	</select>
+	
+	<!-- 增加会议 -->
+	<insert id="insertConference" parameterType="common.model.Conference" useGeneratedKeys="true" keyProperty="conferenceId">
+    	INSERT INTO conference(conference_name,theme,time,site,advertising_map,notice,announcements,contact,agenda,arrangement,manual,status,step_status,follow_through,remark)
+		VALUES (
+			#{conferenceName, jdbcType = VARCHAR},
+			#{theme, jdbcType = VARCHAR},
+			#{time, jdbcType = TIMESTAMP},
+			#{site, jdbcType = VARCHAR},
+			#{advertisingMap, jdbcType = VARCHAR},
+			#{notice, jdbcType = VARCHAR},
+			#{announcements, jdbcType = VARCHAR},
+			#{contact, jdbcType = VARCHAR},
+			#{agenda, jdbcType = VARCHAR},
+			#{arrangement, jdbcType = VARCHAR},
+			#{manual, jdbcType = VARCHAR},
+			#{status, jdbcType = INTEGER},
+			#{stepStatus, jdbcType = VARCHAR},
+			#{followThrough, jdbcType = VARCHAR},			
+			#{remark, jdbcType = VARCHAR}
+		);		
+    </insert>
+    
+    <!-- 修改草稿箱的东西 -->
+    <update id="updateConference" parameterType="java.util.Map">
+    	update conference con 
+    	<trim prefix="set" suffixOverrides=",">
+    	<if test="status!=null">
+			con.status=#{status},
+		</if>
+		<if test="conferenceName!=null and conferenceName!='' and conferenceName!='undefined'.toString()">
+			con.conference_name=#{conferenceName},
+		</if>
+		<if test="theme!=null and theme!='' and theme!='undefined'.toString()">
+			con.theme=#{theme},
+		</if>
+		<if test="site!=null and site!='' and site!='undefined'.toString()">
+			con.site=#{site},
+		</if>
+		<if test="advertisingMap!=null and advertisingMap!='' and advertisingMap!='undefined'.toString()">
+			con.advertising_map=#{advertisingMap},
+		</if>
+		<if test="notice!=null and notice!='' and notice!='undefined'.toString()">
+			con.notice=#{notice},
+		</if>
+		<if test="announcements!=null and announcements!='' and announcements!='undefined'.toString()">
+			con.announcements=#{announcements},
+		</if>
+		<if test="contact!=null and contact!='' and contact!='undefined'.toString()">
+			con.contact=#{contact},
+		</if>
+		<if test="agenda!=null and agenda!='' and agenda!='undefined'.toString()">
+			con.agenda=#{agenda},
+		</if>
+		<if test="arrangement!=null and arrangement!='' and arrangement!='undefined'.toString()">
+			con.arrangement=#{arrangement},
+		</if>
+		<if test="manual!=null and manual!='' and manual!='undefined'.toString()">
+			con.manual=#{manual},
+		</if>
+		<if test="stepStatus!=null and stepStatus!='' and stepStatus!='undefined'.toString()">
+			con.step_status=#{stepStatus},
+		</if>
+		<if test="followThrough!=null and followThrough!='' and followThrough!='undefined'.toString()">
+			con.follow_through=#{followThrough},
+		</if>
+		<if test="remark!=null and remark!='' and remark!='undefined'.toString()">
+			con.remark=#{remark},
+		</if>
+		<if test="time!=null">
+			con.time=#{time}
+		</if>    	
+    	</trim>
+    	WHERE con.conference_id= #{conferenceId}    
+    </update>
+
+	<!-- 删除会议 -->
+    <update id="deleteConference" parameterType="java.util.Map">
+    	update conference set status=0 WHERE conference_id= #{conferenceId}   
+    </update>
+
+</mapper>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- OUTFALL -->
+<mapper namespace="onemap.mapper.OutfallMapper">
+    
+    <!-- 表所有字段 -->
+    <sql id="allColumns">
+        id, identifier, name, region_id, river_id, base_info_type, 
+        longitute, latitude, scale, setting_time, locale, intoriver_type, 
+        emission_mode, riverchief, remark, imgurl
+    </sql>
+    
+    <!-- 根据code、regionId、riverId查询点坐标数据 -->
+    <select id="findOutfallAll" resultType="map" parameterType="map">
+        SELECT 
+        id, LONGITUTE as x, LATITUDE as y
+        FROM OUTFALL WHERE 1=1
+        <if test="code != null and code != 0">
+            AND BASE_INFO_TYPE LIKE CONCAT( #{code},'%')
+        </if>
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        <if test="riverId != null and riverId != ''">
+            AND RIVER_ID LIKE CONCAT( #{riverId},'%')
+        </if>
+    </select>
+    
+	<!-- 根据id查询详细数据 -->
+    <select id="findOutfallById" resultType="map" parameterType="int">
+        SELECT *,CONCAT( LONGITUTE,',',LATITUDE) as point,
+        (SELECT region_name FROM region WHERE region.region_id=OUTFALL.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=OUTFALL.river_id) AS river_name,
+		(SELECT value FROM base_info_type WHERE base_info_type.code=OUTFALL.BASE_INFO_TYPE) AS type_name
+        FROM OUTFALL WHERE id = #{id}
+    </select>
+      
+    <!-- 根据code、regionId分页查询详细数据列表 -->
+    <select id="findOutfallByPage" resultType="map" parameterType="map">
+        SELECT ,
+        (SELECT region_name FROM region WHERE region.region_id=OUTFALL.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=OUTFALL.river_id) AS river_name,
+		(SELECT value FROM base_info_type WHERE base_info_type.code=OUTFALL.BASE_INFO_TYPE) AS type_name
+        FROM OUTFALL WHERE 1=1
+        <if test="code != null and code != 0">
+            AND OUTFALL_TYPE LIKE CONCAT( #{code},'%')
+        </if>
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        LIMIT ${curPage},${pageNumber}
+    </select>
+    
+	<!-- 获取分页查询详情 count总数 page总页数-->
+    <select id="getPagingInformation" resultType="map" parameterType="map">
+		SELECT COUNT(*) AS count,CEILING(COUNT(*)/${pageNumber}) AS page FROM OUTFALL WHERE 1=1
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+	</select>
+	
+    <select id="findMaxId" resultType="int" parameterType="int">
+        SELECT  IFNULL(max(id),0) from OUTFALL
+    </select>
+     
+    <!-- 插入数据 -->
+    <insert id="insertOutfall" parameterType="map">
+        INSERT INTO OUTFALL (<include refid="allColumns" />)
+        VALUES (
+            #{id},
+            #{identifier},
+            #{name},
+            #{region_id},
+            #{river_id},
+            #{base_info_type},
+            #{longitute},
+            #{latitude},
+            #{scale},
+            #{setting_time},
+            #{locale},
+            #{intoriver_type},
+            #{emission_mode},
+            #{riverchief},
+            #{remark},
+            #{imgurl}
+        )
+    </insert>
+    
+    <!-- 修改数据 -->
+    <update id="updateOutfall" parameterType="map">
+        UPDATE OUTFALL SET
+            identifier = #{identifier},
+            name = #{name},
+            region_id = #{region_id},
+            river_id = #{river_id},
+            base_info_type = #{base_info_type},
+            longitute = #{longitute},
+            latitude = #{latitude},
+            scale = #{scale},
+            setting_time = #{settingTime},
+            locale = #{locale},
+            intoriver_type = #{intoriver_type},
+            emission_mode = #{emission_mode},
+            riverchief = #{riverchief},
+            remark = #{remark},
+            imgurl = #{imgurl}
+        WHERE ID = #{id}
+    </update>
+    
+    <!-- 根据主键删除数据 -->
+    <delete id="deleteOutfallById" parameterType="int">
+        DELETE FROM OUTFALL WHERE ID = #{id}
+    </delete>
+    
+</mapper>

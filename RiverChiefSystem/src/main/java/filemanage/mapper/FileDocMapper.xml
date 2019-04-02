@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="filemanage.mapper.FileDocMapper">
+    <resultMap id="BaseResultMap" type="common.model.FileDoc">
+        <id column="file_id" property="fileId" jdbcType="INTEGER"/>
+        <result column="file_num" property="fileNum" jdbcType="VARCHAR"/>
+        <result column="file_name" property="fileName" jdbcType="VARCHAR"/>
+        <result column="file_type" property="fileType" jdbcType="VARCHAR"/>
+        <result column="submit_time" property="submitTime" jdbcType="TIMESTAMP"/>
+        <result column="download_num" property="downloadNum" jdbcType="INTEGER"/>
+        <result column="url" property="url" jdbcType="VARCHAR"/>
+        <result column="version" property="version" jdbcType="INTEGER"/>
+        <result column="directory_id" property="directoryId" jdbcType="VARCHAR"/>
+        <result column="user_id" property="userId" jdbcType="INTEGER"/>
+        <result column="tf" property="tf" jdbcType="INTEGER"/>
+        <result column="river_id" property="riverId" jdbcType="VARCHAR"/>
+    </resultMap>
+    <resultMap id="countMap" type="common.model.FileCount">
+        <result column="file_num" property="fileNum" jdbcType="VARCHAR"/>
+        <result column="file_name" property="fileName" jdbcType="VARCHAR"/>
+        <result column="directory_id" property="directoryId" jdbcType="VARCHAR"/>
+        <result column="count(file_name)" property="count" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <!--查询-->
+    <!--<select id="selectANDgourpByNameFuzzy" resultMap="countMap" parameterType="java.lang.String">-->
+    <!--select  file_num, file_name,count(file_name),directory_id from file where file_name like "%"#{fileName}"%" GROUP  BY file_name,file_num,directory_id;-->
+    <!--</select>-->
+    <select id="selectByNameAndDirectoryFuzzy" resultMap="countMap" parameterType="java.lang.String">
+        select file_num, file_name,count(file_name),directory_id from file
+        <where>
+            <if test="directoryId != null and directoryId != ''">
+                directory_id like '${directoryId}%'
+            </if>
+            <if test="fileName != null and fileName !=''">
+                AND file_name like '%${fileName}%'
+            </if>
+            and tf =1
+        </where>
+        GROUP BY file_name,directory_id;
+
+    </select>
+    <select id="selectByNameAndDirectoryAndTimeFuzzy" resultMap="BaseResultMap" parameterType="java.lang.String">
+        select * from file
+        <where>
+            <if test="startTime !=null and startTime !=''">
+                submit_time BETWEEN '${startTime} 0:0:0'
+            </if>
+            <if test="endTime !=null and endTime !=''">
+                and '${endTime} 23:59:59'
+            </if>
+            <if test="directoryId != null and directoryId != ''">
+                and directory_id like '${directoryId}%'
+            </if>
+            <if test="fileName != null and fileName !=''">
+                AND file_name like '%${fileName}%'
+            </if>
+            and tf =1
+        </where>
+    </select>
+    <select id="selectByNum" resultMap="BaseResultMap">
+        SELECT *
+        FROM file
+        WHERE file_num = #{fileNum} and tf=1
+        ORDER BY version DESC;
+    </select>
+    <select id="selectByNameWithMaxVer" resultMap="BaseResultMap" parameterType="java.lang.String">
+        SELECT
+            file_id,
+            file_num,
+            file_name,
+            file_type,
+            submit_time,
+            download_num,
+            url,
+            max(version) AS version,
+            directory_id,
+            user_id,
+            river_id
+        FROM file
+        WHERE file_num = #{fileNum} AND directory_id = #{directoryId} and tf =1
+    </select>
+    <!--查询最大版本-->
+    <select id="queryMaxVer" resultType="java.lang.String" parameterType="java.lang.String">
+        select max(version)
+        from file
+        where file_num = #{fileNum} and directory_id = #{directoryId} and tf =1;
+    </select>
+    <!--详细表-->
+    <select id="selectByNameAndDir" resultMap="BaseResultMap" parameterType="java.lang.String">
+        select *
+        from file
+        where file_name = #{fileName} and directory_id = #{directoryId} and tf =1
+        order by version DESC;
+    </select>
+    <!--统计-->
+    <select id="countFileByDirectoryId" resultType="java.lang.String" parameterType="java.lang.String">
+        SELECT count(directory_id) from file where directory_id LIKE '${directoryId}%' and tf =1;
+    </select>
+    <select id="countFileInAWeek" resultType="java.lang.Integer">
+        select count(file_id) from file where tf=1 and submit_time between (select date_sub((select now()),interval 1
+        week)) and
+        (select now());
+    </select>
+    <!--自动生成  -->
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer">
+        select
+        *
+        from file
+        where file_id = #{fileId,jdbcType=INTEGER}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+        delete from file
+        where file_id = #{fileId,jdbcType=INTEGER}
+  </delete>
+    <insert id="insert" parameterType="common.model.FileDoc">
+    insert into file (file_id, file_num, file_name, 
+      file_type, submit_time, download_num, 
+      url, version, directory_id,
+        user_id,tf,river_id)
+    values (#{fileId,jdbcType=INTEGER}, #{fileNum,jdbcType=VARCHAR}, #{fileName,jdbcType=VARCHAR}, 
+      #{fileType,jdbcType=VARCHAR}, #{submitTime,jdbcType=TIMESTAMP}, #{downloadNum,jdbcType=INTEGER}, 
+      #{url,jdbcType=VARCHAR}, #{version,jdbcType=INTEGER}, #{directoryId,jdbcType=VARCHAR},
+        #{userId,jdbcType=INTEGER},#{tf,jdbcType=INTEGER},#{riverId})
+  </insert>
+    <update id="updateByPrimaryKey" parameterType="common.model.FileDoc">
+    update file
+    set file_num = #{fileNum,jdbcType=VARCHAR},
+      file_name = #{fileName,jdbcType=VARCHAR},
+      file_type = #{fileType,jdbcType=VARCHAR},
+      submit_time = #{submitTime,jdbcType=TIMESTAMP},
+      download_num = #{downloadNum,jdbcType=INTEGER},
+      url = #{url,jdbcType=VARCHAR},
+      version = #{version,jdbcType=INTEGER},
+      directory_id = #{directoryId,jdbcType=VARCHAR},
+        user_id = #{userId,jdbcType=INTEGER},
+        tf =#{tf,jdbcType=INTEGER},
+        river_id=#{riverId}
+    where file_id = #{fileId,jdbcType=INTEGER}
+  </update>
+
+    <select id="selectByNameAndDirectoryWithMaxVer" resultMap="BaseResultMap">
+        SELECT * FROM file
+        where
+        file_name in (
+        SELECT file_name FROM file
+        <where>
+            <if test="startTime !=null and startTime !=''">
+                submit_time BETWEEN '${startTime} 0:0:0'
+            </if>
+            <if test="endTime !=null and endTime !=''">
+                and '${endTime} 23:59:59'
+            </if>
+            <if test="directoryId != null and directoryId != ''">
+                AND directory_id like '${directoryId}%'
+            </if>
+            <if test="fileName != null and fileName !=''">
+                AND file_name like '%${fileName}%'
+            </if>
+            and tf =1
+        </where>
+        group by file_name)
+        ORDER BY submit_time DESC LIMIT 1;
+
+    </select>
+
+    <select id="selectByRiver" resultMap="BaseResultMap">
+        select file_id,
+            file_num,
+            file_name,
+            file_type,
+            submit_time,
+            download_num,
+            url,
+            max(version) AS version,
+            directory_id,
+            user_id,
+            river_id
+            from file
+            where river_id=#{riverid} and tf=1
+            group by file_num,directory_id
+            order by directory_id asc
+    </select>
+</mapper>

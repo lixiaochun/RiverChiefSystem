@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+ <mapper namespace="usermanage.mapper.LogMapper">
+ 
+ <!-- 系统日志 -->
+	<resultMap type="common.model.SystemLog" id="systemLog">
+	 	<id column="system_log_id" property="systemLogId" />
+        <result column="user_id" property="userId" />
+        <result column="log_status" property="logStatus" />
+        <result column="opera_interface" property="operaInterface" />
+        <result column="opera_name" property="operaName" />
+        <result column="opera_type" property="operaType" />
+        <result column="opera_type_name" property="operaTypeName" />
+        <result column="log_type" property="logType" />
+        <result column="log_type_name" property="logTypeName" />
+        <result column="opera_time" property="operaTime" />
+        <result column="log_detail" property="logDetail" />
+        <result column="remark" property="remark" />
+        <result column="real_name" property="realName" />
+        <result column="user_name" property="userName" />
+    </resultMap>
+ 
+ 	<!-- 插入系统日志 -->
+ 	<insert id="addLog" parameterType="java.util.Map">
+ 		INSERT INTO system_log(opera_interface,opera_name,opera_type,log_type,opera_time,log_detail,user_id)
+		VALUES (
+			#{operaInterface, jdbcType = VARCHAR},
+			#{operaName, jdbcType = VARCHAR},
+			#{operaType, jdbcType = VARCHAR},
+			#{logType, jdbcType = VARCHAR},
+			#{operaTime, jdbcType = TIMESTAMP},
+			#{logDetail, jdbcType = VARCHAR},
+			#{userId, jdbcType = INTEGER}
+		);
+ 	</insert>
+ 	
+ 	<!-- 插入系统日志 -->
+ 	<insert id="addLog1" parameterType="java.util.Map">
+ 		INSERT INTO system_log (opera_interface,opera_name,opera_type,log_type,opera_time,log_detail)
+		VALUES (
+			#{operaInterface, jdbcType = VARCHAR},
+			#{operaName, jdbcType = VARCHAR},
+			#{operaType, jdbcType = VARCHAR},
+			#{logType, jdbcType = VARCHAR},
+			#{operaTime, jdbcType = TIMESTAMP},
+			#{logDetail, jdbcType = VARCHAR}
+		);
+ 	</insert>
+ 	
+ 	<select id="queryLog" parameterType="java.util.Map" resultMap="systemLog">
+ 		select l.* , u.user_name , u.real_name , d1.name as opera_type_name ,d2.name as log_type_name from system_log l 
+ 		left join user u on l.user_id = u.user_id
+ 		left join dict d1 on d1.code = l.opera_type left join dict d2 on d2.code = l.log_type
+ 		<where>
+ 		<if test="startTime!=null">
+ 			and l.opera_time  &gt;= #{startTime,jdbcType = TIMESTAMP}
+ 		</if>
+ 		<if test="endTime!=null">
+ 			 and l.opera_time &lt;= #{endTime,jdbcType = TIMESTAMP}
+ 		</if>
+ 		<if test="userName!=null and userName!='undefined'.toString()">
+ 			and u.user_name like '%${userName}%'
+ 		</if>
+ 		<if test="operaType!=null and operaType!='undefined'.toString()">
+ 			and l.opera_type = #{operaType}
+ 		</if>
+ 		and d1.field = 'opera_type'
+ 		and d2.field = 'log_type'
+ 		order by opera_time asc
+ 		<if test="min!=null and pageSize!=null">
+ 			LIMIT #{min},#{pageSize}
+ 		</if>
+ 		</where>
+ 	</select>
+ 	
+ 	<select id="countLog" parameterType="java.util.Map" resultType="java.lang.Integer">
+ 		select count(*) from system_log l left join user u on l.user_id = u.user_id
+ 		left join dict d1 on d1.code = l.opera_type left join dict d2 on d2.code = l.log_type
+ 		<where>
+ 		<if test="startTime!=null">
+ 			and l.opera_time  &gt;= #{startTime,jdbcType = TIMESTAMP}
+ 		</if>
+ 		<if test="endTime!=null">
+ 			 and l.opera_time &lt;= #{endTime,jdbcType = TIMESTAMP}
+ 		</if>
+ 		<if test="userName!=null and userName!='undefined'.toString()">
+ 			and u.user_name like '%${userName}%'
+ 		</if>
+ 		<if test="operaType!=null and operaType!='undefined'.toString()">
+ 			and l.opera_type = #{operaType}
+ 		</if>
+ 		and d1.field = 'opera_type'
+ 		and d2.field = 'log_type'
+ 		</where>
+ 	</select>
+ 	
+ 	<insert id="addWorkflowLog" parameterType="java.util.Map">
+ 		INSERT INTO system_log(type,event_id,
+ 			<if test="taskId!=null"> task_id, </if>
+ 			<if test="imgurl!=null"> imgurl, </if>
+			<if test="content!=null"> content, </if>
+			<if test="logStatus"> log_status, </if> 
+			opera_interface,opera_name,opera_type,log_type,opera_time,log_detail,user_id)
+		VALUES (
+			#{type, jdbcType = INTEGER},
+			#{eventId, jdbcType = INTEGER},
+			<if test="taskId!=null"> 
+			#{taskId, jdbcType = VARCHAR},
+			</if>
+			<if test="imgurl!=null">
+			#{imgurl, jdbcType = VARCHAR},
+			</if>
+			<if test="content!=null">
+			#{content, jdbcType = VARCHAR},
+			</if>
+			<if test="logStatus">
+			#{logStatus, jdbcType = VARCHAR},
+			</if>
+			#{operaInterface, jdbcType = VARCHAR},
+			#{operaName, jdbcType = VARCHAR},
+			#{operaType, jdbcType = VARCHAR},
+			#{logType, jdbcType = VARCHAR},
+			#{operaTime, jdbcType = TIMESTAMP},
+			#{logDetail, jdbcType = VARCHAR},
+			#{userId, jdbcType = INTEGER}
+		);
+ 	</insert>
+ </mapper>

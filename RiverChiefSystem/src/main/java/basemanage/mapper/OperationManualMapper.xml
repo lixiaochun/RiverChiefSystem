@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="basemanage.mapper.OperationManualMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="OperationManualFile" type="basemanage.model.OperationManualFile">
+        <id column="id" property="id" jdbcType="VARCHAR" />
+        <result column="name" property="name" jdbcType="VARCHAR" />
+        <result column="filepath" property="filepath" jdbcType="VARCHAR" />
+    </resultMap>
+
+    
+    <!-- 根据code查询点坐标数据 -->
+    <select id="selectFileList" resultMap="OperationManualFile" parameterType="map">
+        SELECT id,name,filepath FROM operation_manual_file
+    </select>
+    
+    
+</mapper>

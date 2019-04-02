@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- WATERLINE -->
+<mapper namespace="onemap.mapper.MileageMapper">
+
+     <!-- 表所有字段 -->
+    <sql id="allColumns">
+        ID, REGION_ID, REGION_NAME, LEVEL, LONGITUTE, LATITUDE, RADIUS
+    </sql>
+	
+	<!-- 查询所有数据 -->
+    <select id="findCenterPointTownByRegionId" resultType="map"  parameterType="map">
+        SELECT * FROM CENTER_POINT_TOWN WHERE region_id = #{regionId} 
+    </select>
+    
+    <select id="findCenterPointTownAll" resultType="map"  >
+        SELECT longitute as x,latitude as y ,region_name from center_point_town
+    </select>
+    
+    <update id="updateCenterPointTown" parameterType="map">
+    	UPDATE center_point_town SET latitude = #{latitude} ,longitute= #{longitute} WHERE region_name = #{regionName}
+    </update>
+
+</mapper>

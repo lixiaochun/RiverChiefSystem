@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- COLLECTION_RIVER -->
+<mapper namespace="onemap.mapper.CollectionRiverMapper">
+    
+    <!-- 表所有字段 -->
+    <sql id="allColumns">
+       USER_ID, RIVER_ID
+    </sql>
+    
+    <select id="findCollectionRiverByUserId" resultType="map" parameterType="int">
+ 		SELECT river.river_id as riverId,river.river_name as riverName FROM COLLECTION_RIVER,river 
+ 		WHERE collection_river.user_id=#{userId} AND COLLECTION_RIVER.river_id=river.river_id
+     </select>
+    
+    <!-- 插入数据 -->
+    <insert id="insertCollectionRiver" parameterType="map">
+        INSERT INTO COLLECTION_RIVER (USER_ID, RIVER_ID)
+        VALUES (
+            #{userId},
+            #{riverId}
+        )
+    </insert>
+    
+    <!-- 根据主键删除数据 -->
+    <delete id="deleteCollectionRiverById" parameterType="map">
+        DELETE FROM COLLECTION_RIVER WHERE USER_ID = #{userId} AND RIVER_ID = #{riverId}
+    </delete>
+
+</mapper>

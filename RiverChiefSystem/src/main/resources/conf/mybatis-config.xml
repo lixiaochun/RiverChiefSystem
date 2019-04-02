@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration 
+PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<!-- author MT
+	 since 2017.8.9
+	 配置mybatis -->
+<configuration>
+    <!-- 命名空间 -->
+    <typeAliases>
+         <package name="common.model" />  
+    </typeAliases>
+    <!-- 映射map -->
+    <!-- 映射map -->
+    <mappers>
+    </mappers>
+
+</configuration>
+

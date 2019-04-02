@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="onemaplocation.mapper.OnemapUserInformation">
+    
+	<!-- 查询所有数据 -->
+    <select id="selectUserInformation" resultType="map"  parameterType="int">
+        SELECT real_name,phone,CONCAT(
+		(SELECT region.region_name from region WHERE region_id = CONCAT(LEFT(user.region_id,9),'000')),
+		(SELECT region.region_name from region WHERE region_id = user.region_id)
+		) AS region_name,
+		(SELECT organization_name FROM organization WHERE organization.organization_id = user.organization_id) AS organization_name
+		FROM user WHERE user_id = #{userId}
+    </select>
+    
+    <select id="selectUserRelationRiver" resultType="map"  parameterType="int">
+        SELECT (SELECT river.river_name FROM river WHERE river.river_id = user_river_relation.river_id) AS river_name 
+ 		FROM user_river_relation WHERE user_id = #{userId}
+    </select>
+    
+</mapper>

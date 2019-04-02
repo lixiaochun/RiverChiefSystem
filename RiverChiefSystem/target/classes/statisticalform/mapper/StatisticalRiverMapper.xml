@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="statisticalform.mapper.StatisticalRiverMapper">
+    <resultMap id="Base" type="common.model.StatisticsRiver">
+        <result column="river_count" property="riverCount"/>
+        <result column="region_id" property="regionId"/>
+        <result column="river_level" property="riverLevel"/>
+    </resultMap>
+
+    <select id="countByLevel" resultMap="Base">
+        SELECT COUNT(river.river_id) as river_count,region.level as river_level FROM river LEFT JOIN region on
+        river.region_id=region.region_id
+        where region.level in (2,3,4,5) and river.region_id LIKE '${regionId}%' GROUP BY region.level;
+    </select>
+    <select id="countRiverByParent" resultType="java.lang.Integer">
+        SELECT count(river_id) FROM river
+        where region_id LIKE '${regionId}%'
+    </select>
+    <select id="countUserByParent" resultType="java.lang.Integer">
+        SELECT count(user_id) FROM user where organization_id in (
+        SELECT organization_id FROM organization where region_id like '${regionId}%' );
+    </select>
+</mapper>

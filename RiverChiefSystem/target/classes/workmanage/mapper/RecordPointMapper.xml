@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="workmanage.mapper.RecordPointMapper">
+	
+	<resultMap type="common.model.RecordPoint" id="recordPoint">
+	 	<id column="record_point_id" property="recordPointId" />
+        <result column="point" property="point" />
+        <result column="patrol_record_id" property="patrolRecordId" />
+        <result column="imgurl" property="imgurl" />
+        <result column="detail" property="detail" />
+        <result column="record_type" property="recordType" />
+    </resultMap>
+    
+    <!-- 查询-巡查记录 显示point信息 -->
+	<select id="queryRecordPointByPatrolRecordId" parameterType="java.lang.Integer" resultMap="recordPoint">
+		select * from record_point where patrol_record_id=#{patrolRecordId}
+	</select>
+</mapper>

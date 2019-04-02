@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- RIVER -->
+<mapper namespace="onemap.mapper.RiverMapper">
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="common.model.River">
+        <id column="river_id" property="riverId" jdbcType="VARCHAR"/>
+        <result column="river_name" property="riverName" jdbcType="VARCHAR"/>
+        <result column="river_level" property="riverLevel" jdbcType="INTEGER"/>
+        <result column="parent_id" property="parentId" jdbcType="VARCHAR"/>
+        <result column="f_id" property="fId" jdbcType="INTEGER"/>
+        <result column="remark" property="remark" jdbcType="VARCHAR"/>
+        <result column="level_name" property="levelName" jdbcType="VARCHAR"/>
+        <result column="type" property="type" jdbcType="INTEGER"/>
+        <result column="region_id" property="regionId" jdbcType="VARCHAR"/>
+        <result column="user_id" property="userId" jdbcType="INTEGER"/>
+    </resultMap>
+    <!-- 表所有字段 -->
+    <sql id="allColumns">
+        RIVER_ID, RIVER_NAME, RIVER_LEVEL, PARENT_ID, F_ID, REMARK,
+        LEVEL_NAME
+    </sql>
+
+    <select id="selectByParent" resultType="java.lang.String" parameterType="java.lang.String">
+        SELECT river_id FROM river where parent_id=#{parentId} and type is NULL ;
+    </select>
+    <select id="selectByRegion" resultType="java.lang.String" parameterType="java.lang.String">
+        SELECT river_id FROM river where region_id=#{regionId} and type is NULL ;
+    </select>
+    <select id="selectByOwner" resultType="java.lang.String" parameterType="java.lang.Integer">
+        SELECT river_id FROM river where user_id=#{ownerId} and type is NULL ;
+    </select>
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.String">
+        SELECT * FROM river where river_id=#{riverId};
+    </select>
+    <select id="getListByParent" resultMap="BaseResultMap" parameterType="java.lang.String">
+        SELECT * FROM river where parent_id=#{parentId};
+    </select>
+</mapper>

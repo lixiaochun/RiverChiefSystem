@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace命名空间，作用就是对sql进行分类化管理，理解sql隔离 注意：使用mapper代理方法开发，namespace有特殊重要的作用 -->
+<mapper namespace="usermanage.mapper.DateInfoMapper">
+
+	<resultMap
+		type="common.model.River"
+		id="river">
+		<id
+			column="river_id"
+			property="riverId" />
+		<result
+			column="river_name"
+			property="riverName" />
+		<result
+			column="river_level"
+			property="riverLevel" />
+		<result
+			column="is_parent"
+			property="isParent" />
+		<result
+			column="parent_id"
+			property="parentId" />
+		<result
+			column="f_id"
+			property="fId" />
+		<result
+			column="region_id"
+			property="regionId" />
+		<result
+			column="user_id"
+			property="userId" />
+		<result
+			column="remark"
+			property="remark" />
+		<result
+			column="real_name"
+			property="realName" />
+		<result
+			column="region_name"
+			property="regionName" />
+	</resultMap>
+
+	<resultMap
+		type="common.model.FocusRiver"
+		id="focusRiver">
+		<id
+			column="focus_river_id"
+			property="focusRiverId" />
+		<result
+			column="river_id"
+			property="riverId" />
+		<result
+			column="river_name"
+			property="riverName" />
+		<result
+			column="user_id"
+			property="userId" />
+		<result
+			column="time"
+			property="time" />
+		<result
+			column="status"
+			property="status" />
+	</resultMap>
+
+	<resultMap
+		type="common.model.Region"
+		id="region">
+		<id
+			column="region_id"
+			property="regionId" />
+		<result
+			column="region_name"
+			property="regionName" />
+		<result
+			column="level"
+			property="level" />
+		<result
+			column="level_name"
+			property="levelName" />
+		<result
+			column="is_parent"
+			property="isParent" />
+		<result
+			column="parent_id"
+			property="parentId" />
+		<result
+			column="longitute"
+			property="longitute" />
+		<result
+			column="latitude"
+			property="latitude" />
+		<result
+			column="remark"
+			property="remark" />
+	</resultMap>
+
+	<resultMap
+		type="common.model.Dict"
+		id="dict">
+		<id
+			column="table"
+			property="table" />
+		<result
+			column="field"
+			property="field" />
+		<result
+			column="code"
+			property="code" />
+		<result
+			column="name"
+			property="name" />
+		<collection
+			property="dictList"
+			column="code"
+			javaType="java.util.List"
+			ofType="common.model.Dict"
+			select="getDictByCode" />
+		<!-- <id column="table1" property="table" /> <result column="field1" property="field" 
+			/> <result column="code1" property="code" /> <result column="name1" property="name" 
+			/> </collection> -->
+	</resultMap>
+
+	<select
+		id="queryRiver"
+		resultMap="river"
+		parameterType="java.util.Map">
+		select r.*,re.region_name,u.real_name from river r
+		left join region re on r.region_id = re.region_id left join user u on
+		u.user_id = r.user_id
+		<where>
+			<if test="riverId!=null">
+				and r.river_id like
+				CONCAT((SELECT (
+				CASE WHEN rr.river_level=0 THEN LEFT(river_id,2)
+				WHEN rr.river_level=1 THEN LEFT(river_id,4)
+				WHEN rr.river_level=2 THEN LEFT(river_id,6)
+				WHEN rr.river_level=3 THEN LEFT(river_id,8)
+				WHEN rr.river_level=4 THEN LEFT(river_id,10)
+				WHEN rr.river_level=5 THEN LEFT(river_id,12)
+				WHEN rr.river_level=6 THEN LEFT(river_id,14)
+				END)AS river_id
+				FROM river rr WHERE rr.river_id LIKE #{riverId}),'%')
+			</if>
+			<if test="regionId!=null">
+				and r.region_id LIKE
+				CONCAT('%',(SELECT (
+				CASE WHEN r.level=0 THEN LEFT(region_id,0)
+				WHEN r.level=1 THEN LEFT(region_id,2)
+				WHEN r.level=2 THEN LEFT(region_id,4)
+				WHEN r.level=3 THEN LEFT(region_id,6)
+				WHEN r.level=4 THEN LEFT(region_id,9)
+				WHEN r.level=5 THEN region_id
+				END)AS region_id
+				FROM region r WHERE region_id LIKE #{regionId}),'%')
+			</if>
+			<!-- 查询河流上级对应的人员的管属河流 -->
+			<if test="superior!=null">
+				<if test="riverIds!=null">
+					and r.river_id in
+					<foreach
+						collection="riverIds"
+						item="item"
+						open="("
+						close=")"
+						index="index"
+						separator=",">
+						#{item}
+					</foreach>
+				</if>
+				<if test="userId!=null">
+					and u.user_id = #{userId}
+				</if>
+			</if>
+
+			<if test="type!=null">
+				and r.type = 1
+			</if>
+		</where>
+	</select>
+
+	<select
+		id="queryRegion"
+		resultMap="region"
+		parameterType="java.util.Map">
+		select * from region
+		<where>
+			<if test="regionType==1">
+				<if test="regionId!=null">
+					and region_id LIKE
+					CONCAT('%',(SELECT (
+					CASE WHEN r.level=0 THEN LEFT(region_id,0)
+					WHEN r.level=1 THEN LEFT(region_id,2)
+					WHEN r.level=2 THEN LEFT(region_id,4)
+					WHEN r.level=3 THEN LEFT(region_id,6)
+					WHEN r.level=4 THEN LEFT(region_id,9)
+					WHEN r.level=5 THEN region_id
+					END)AS region_id
+					FROM region r WHERE region_id LIKE #{regionId}),'%')
+				</if>
+			</if>
+			<if test="parentId!=null">
+				and region_id = #{parentId}
+			</if>
+			<if test="level!=null">
+				and level = #{level}
+			</if>
+		</where>
+	</select>
+
+	<select
+		id="queryFocusRiver"
+		resultMap="focusRiver"
+		parameterType="java.util.Map">
+		select fr.*,r.river_name as river_name from focus_river fr,river r
+		<where>
+			<if test="userId!=null">
+				fr.user_id = #{userId}
+			</if>
+			and fr.river_id = r.river_id
+		</where>
+	</select>
+
+	<select
+		id="queryDict"
+		resultMap="dict"
+		parameterType="java.util.Map">
+		select * from dict
+	</select>
+
+	<select
+		id="queryRegionId"
+		resultMap="region"
+		parameterType="java.util.Map">
+		select * from region
+		<where>
+			<if test="type!=null">
+				<if test="type==0">
+					and parent_id = 0
+				</if>
+				<if test="type==1">
+					and parent_id = #{regionId}
+				</if>
+			</if>
+			<if test="type==null">
+				<if test="regionId!=null">
+					and region_id = #{regionId}
+				</if>
+				<if test="parentId!=null">
+					and parent_id = #{parentId}
+				</if>
+			</if>
+			<if test="level!=null">
+				and level = #{level}
+			</if>
+			<if test="level1!=null">
+				and level != #{level1}
+			</if>
+		</where>
+	</select>
+
+	<select
+		id="queryRiverId"
+		resultMap="river"
+		parameterType="java.util.Map">
+		select * from river where river_id = #{riverId}
+	</select>
+
+	<insert
+		id="insertRegion"
+		parameterType="java.util.List">
+		<selectKey
+			resultType="java.lang.Integer"
+			keyProperty="id"
+			order="AFTER">
+			SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO region(region_id ,region_name , parent_id ,is_parent,
+		level , longitute , latitude ,remark )
+		values
+		<foreach
+			collection="list"
+			item="region"
+			index="index"
+			separator=",">
+			(
+			#{region.regionId, jdbcType = VARCHAR},
+			#{region.regionName, jdbcType
+			= VARCHAR},
+			#{region.parentId, jdbcType = VARCHAR},
+			#{region.isParent,
+			jdbcType = INTEGER},
+			#{region.level, jdbcType = INTEGER},
+			#{region.longitute, jdbcType = VARCHAR},
+			#{region.latitude, jdbcType =
+			VARCHAR},
+			#{region.remark, jdbcType = VARCHAR}
+			)
+		</foreach>
+	</insert>
+
+	<update
+		id="updateRegion"
+		parameterType="java.util.List">
+		<foreach
+			collection="list"
+			item="region"
+			index="index"
+			separator=";">
+			update region
+			<set>
+				region_name=#{region.regionName, jdbcType = VARCHAR},
+				parent_id=#{region.parentId, jdbcType =
+				VARCHAR},
+				is_parent=#{region.isParent, jdbcType = INTEGER},
+				level=#{region.level, jdbcType = INTEGER},
+				longitute=#{region.longitute, jdbcType = VARCHAR},
+				latitude=#{region.latitude, jdbcType = VARCHAR},
+				remark=#{region.remark, jdbcType = VARCHAR}
+			</set>
+			where region_id = #{region.regionId,jdbcType=VARCHAR}
+		</foreach>
+	</update>
+
+	<insert
+		id="insertRiver"
+		parameterType="java.util.List">
+		<selectKey
+			resultType="java.lang.Integer"
+			keyProperty="id"
+			order="AFTER">
+			SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO river(river_id ,river_name , river_level ,is_parent,
+		parent_id , f_id , region_id ,user_id,type,remark )
+		values
+		<foreach
+			collection="list"
+			item="river"
+			index="index"
+			separator=",">
+			(
+			#{river.riverId, jdbcType = VARCHAR},
+			#{river.riverName, jdbcType =
+			VARCHAR},
+			#{river.riverLevel, jdbcType = INTEGER},
+			#{river.isParent,
+			jdbcType = INTEGER},
+			#{river.parentId, jdbcType = VARCHAR},
+			#{river.fId, jdbcType = VARCHAR},
+			#{river.regionId, jdbcType =
+			VARCHAR},
+			#{river.userId, jdbcType = INTEGER},
+			#{river.type, jdbcType =
+			INTEGER},
+			#{river.remark, jdbcType = VARCHAR}
+			)
+		</foreach>
+	</insert>
+
+	<update
+		id="updateRiver"
+		parameterType="java.util.List">
+		<foreach
+			collection="list"
+			item="river"
+			index="index"
+			separator=";">
+			update river
+			<set>
+				river_name=#{river.riverName, jdbcType = VARCHAR},
+				river_level=#{river.riverLevel, jdbcType = INTEGER},
+				<!-- is_parent=#{river.isParent, jdbcType = INTEGER}, -->
+				parent_id=#{river.parentId, jdbcType = VARCHAR},
+				f_id=#{river.fId,
+				jdbcType = VARCHAR},
+				region_id=#{river.regionId, jdbcType = VARCHAR},
+				user_id=#{river.userId, jdbcType = INTEGER},
+				type=#{river.type,
+				jdbcType = INTEGER},
+				remark=#{river.remark, jdbcType = VARCHAR}
+			</set>
+			where river_id = #{river.riverId, jdbcType = VARCHAR}
+		</foreach>
+	</update>
+
+	<select
+		id="queryProblemType"
+		resultMap="dict"
+		parameterType="java.util.Map">
+		select * from dict where code = CONCAT(LEFT(code,2),'00') and field =
+		'problem_type'
+		<!-- ,dict2.code as code1,dict2.name as name1 from (select * from dict 
+			where code = CONCAT(LEFT(code,2),'00') and field = 'problem_type')dict1 left 
+			JOIN (select * from dict where field = 'problem_type')dict2 on dict2.code 
+			like CONCAT(LEFT(dict1.code,2),'%') where dict2.code != CONCAT(LEFT(dict1.code,2),'00') -->
+	</select>
+
+	<select
+		id="getDictByCode"
+		resultType="dict">
+		select * from dict where code like CONCAT(LEFT(#{code},2),'%') and code !=
+		CONCAT(LEFT(code,2),'00') and field = 'problem_type'
+	</select>
+
+	<select
+		id="queryProblemTypeByProblemType"
+		resultType="dict"
+		parameterType="java.util.Map">
+		select * from dict where code = #{problemType} and field = 'problem_type'
+	</select>
+</mapper>

@@ -1,0 +1,591 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+ <mapper namespace="workmanage.mapper.EventMapper">
+	
+	<!-- 事件 -->
+	<resultMap type="common.model.Event" id="event">
+	 	<id column="event_id" property="eventId" />
+        <result column="event_name" property="eventName" />
+        <result column="event_code" property="eventCode" />
+        <result column="event_level" property="eventLevel" />
+        <result column="event_level_name" property="eventLevelName" />
+        <result column="patrol_record_id" property="patrolRecordId" />
+        <result column="report_type" property="reportType" />
+        <result column="report_type_name" property="reportTypeName" />
+        <result column="event_content" property="eventContent" />
+       <!--  <result column="beforeimgurl" property="beforeimgurl" />
+        <result column="beforeimgsmallurl" property="beforeimgsmallurl" /> -->
+        <result column="event_point" property="eventPoint" />
+        <result column="address" property="address" />
+        <result column="event_type" property="eventType" />
+        <result column="event_type_name" property="eventTypeName" />
+        <result column="opera_type" property="operaType" />
+        <result column="opera_type_name" property="operaTypeName" />
+        <result column="river_id" property="riverId" />
+        <result column="river_name" property="riverName" />
+        <result column="region_id" property="regionId" />
+        <result column="region_name" property="regionName" />
+        <result column="problem_type" property="problemType" />
+        <result column="problem_type_name" property="problemTypeName" />
+        <result column="event_time" property="eventTime" />
+        <result column="update_time" property="updateTime" />
+        <result column="limit_time" property="limitTime" />
+        <result column="rectification" property="rectification" />
+        <!-- <result column="now_user_id" property="nowUserId" /> -->
+        <result column="user_id" property="userId" />
+        <result column="real_name" property="realName" />
+        <!-- <result column="process_instance_id" property="processInstanceId" /> -->
+        <result column="event_status" property="eventStatus" />
+        <result column="remark" property="remark" />
+        <result column="record_name" property="recordName" />
+        <result column="patrol_range" property="patrolRange" />
+        <result column="start_time" property="startTime" />
+        <result column="end_time" property="endTime" />
+        <result column="is_accountability" property="isAccountability" />
+        <association property="nowRealName" column="eventId=event_id" select="workmanage.mapper.WorkflowMapper.selectTaskAssignee"/>
+        <collection property="eventFileList" ofType="common.model.EventFile" column="eventId=event_id"
+        select="workmanage.mapper.EventFileMapper.queryEventFile">
+        </collection>
+    </resultMap>
+    
+    <resultMap type="common.model.WorkflowLog" id="workflowLog">
+    	<id column="workflow_log_id" property="workflowLogId" />
+        <result column="event_id" property="eventId" />
+        <result column="user_id" property="userId" />
+        <result column="task_id" property="taskId" />
+        <result column="content" property="content" />
+       <!--  <result column="imgurl" property="imgurl" />
+        <result column="imgsmallurl" property="imgsmallurl" /> -->
+        <result column="log_status" property="logStatus" />
+        <result column="log_status_name" property="logStatusName" />
+        <result column="point" property="point" />
+        <result column="accept_time" property="acceptTime" />
+        <result column="opera_time" property="operaTime" />
+        <result column="real_name" property="realName" />
+        <result column="next_user_id" property="nextUserId" />
+        <result column="next_real_name" property="nextRealName" />
+        <result column="visit_days" property="visitDays" />
+        <result column="remark" property="remark" />
+        <collection property="eventFileList" ofType="common.model.EventFile" column="workflowLogId=workflow_log_id"
+        select="workmanage.mapper.EventFileMapper.queryEventFile">
+        </collection>
+    </resultMap>
+    
+    <insert id="addEven"  parameterType="common.model.Event" useGeneratedKeys="true" keyProperty="eventId">
+    	insert into event (event_id, event_name, event_code, 
+      event_level, patrol_record_id ,
+       report_type, event_content, event_point, address, 
+      event_type, river_id, region_id, 
+      problem_type, event_time, update_time, 
+      limit_time, rectification, 
+      user_id, event_status,is_accountability,
+      remark)
+    values (#{eventId,jdbcType=INTEGER}, #{eventName,jdbcType=VARCHAR}, #{eventCode,jdbcType=VARCHAR}, 
+      #{eventLevel,jdbcType=VARCHAR},#{patrolRecordId,jdbcType=INTEGER},  
+      #{reportType,jdbcType=VARCHAR}, #{eventContent,jdbcType=VARCHAR}, 
+      #{eventPoint,jdbcType=VARCHAR}, #{address,jdbcType=VARCHAR}, 
+      #{eventType,jdbcType=VARCHAR}, #{riverId,jdbcType=VARCHAR}, #{regionId,jdbcType=INTEGER}, 
+      #{problemType,jdbcType=VARCHAR}, #{eventTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}, 
+      #{limitTime,jdbcType=TIMESTAMP}, #{rectification,jdbcType=VARCHAR}, 
+      #{userId,jdbcType=INTEGER}, #{eventStatus,jdbcType=INTEGER},#{isAccountability,jdbcType=INTEGER},
+      #{remark,jdbcType=VARCHAR})
+  	</insert>
+    
+    <update id="updateEvent" parameterType="java.util.Map">
+    	update event 	
+    	 <trim prefix="set" suffixOverrides=",">
+  		<if test="processInstanceId!=null and processInstanceId!=''">process_instance_id = #{processInstanceId, jdbcType = VARCHAR},</if>
+  		<if test="eventType!=null and eventType!=''">event_type = #{eventType, jdbcType = VARCHAR},</if>
+  		<if test="limitTime!=null and limitTime!=''">limit_time = #{limitTime, jdbcType = TIMESTAMP},</if>
+  		<if test="rectification!=null and rectification!=''">rectification = #{rectification, jdbcType = VARCHAR},</if>
+  		<if test="visitDays!=null">visit_days = #{visitDays, jdbcType = INTEGER} ,</if>
+  		<if test="nowUserId!=null">now_user_id = #{nowUserId, jdbcType = INTEGER} ,</if>
+  		<if test="eventName!=null and eventName!=''">event_name = #{eventName, jdbcType = VARCHAR} ,</if>
+  		<if test="points!=null and points!=''">points = #{points, jdbcType = VARCHAR} ,</if>
+  		<if test="updateTime!=null">update_time = #{updateTime, jdbcType = TIMESTAMP} ,</if>
+  		<if test="eventStatus!=null">event_status = #{eventStatus, jdbcType = INTEGER} ,</if>
+  		<if test="beforeimgsmallurl!=null and beforeimgsmallurl!=''">beforeimgsmallurl = #{beforeimgsmallurl, jdbcType = VARCHAR} ,</if>
+  		<if test="beforeimgurl!=null and beforeimgurl!=''">beforeimgurl = #{beforeimgurl, jdbcType = VARCHAR} ,</if>
+  		<if test="fileurl!=null and fileurl!=''">fileurl = #{fileurl, jdbcType = VARCHAR} ,</if>
+  		<if test="isAccountability!=null and isAccountability!=''">is_accountability = #{isAccountability,jdbcType=INTEGER} ,</if>
+ 		</trim>
+    	where event_id = #{eventId, jdbcType = INTEGER}
+    </update>
+    
+    <select id="queryEvent" resultMap="event" parameterType="java.util.Map">
+    	select DISTINCT e.*,d1.name as event_level_name , d2.name as report_type_name , d3.name as event_type_name,d4.name as problemTypeName,
+    	<!-- d4.name as operaTypeName, -->
+    	r.region_name as region_name, u.real_name as real_name, rr.river_name as river_name 
+    	,pr.record_name as record_name,pr.start_time , pr.end_time , pr.patrol_range
+    	from event e left join dict d1 on e.event_level = d1.code left join dict d2 on e.report_type = d2.code  
+    	left join dict d3 on e.event_type = d3.code 
+    	<!-- left join dict d4 on e.event_type = d4.code  -->
+    	left join region r on e.region_id = r.region_id 
+    	left join user u on e.user_id = u.user_id left join river rr on e.river_id = rr.river_id left join workflow_log wl on wl.event_id = e.event_id
+    	left join patrol_record pr on pr.patrol_record_id = e.patrol_record_id left join dict d4 on d4.code = CONCAT(LEFT(e.problem_type,2),'00') 
+    	<where>
+    		<if test="eventIds!=null">  
+             and e.event_id in  
+             <foreach collection="eventIds" item="item"  open="(" close=")" index="index" separator=",">  
+                 #{item}  
+             </foreach>  
+         	</if>  
+         	<if test="patrolRecordId!=null and patrolRecordId!='' and patrolRecordId!='-1'">
+    			and e.patrol_record_id=#{patrolRecordId,jdbcType = INTEGER}
+    		</if>
+    		<if test="eventId!=null">
+    			and e.event_id=#{eventId,jdbcType = INTEGER}
+    		</if>
+    		<if test="reportType!=null and reportType!='' and reportType!='undefined'.toString()">
+    			and e.report_type = #{reportType,jdbcType = INTEGER}
+    		</if>
+    		<if test="startTime!=null">
+ 				and  e.event_time &gt;= #{startTime,jdbcType = TIMESTAMP}
+ 			</if>
+ 			<if test="endTime!=null">
+ 			 	and e.event_time &lt;= #{endTime,jdbcType = TIMESTAMP}
+ 			</if>
+ 			<if test="eventType!=null and eventType!='' and eventType!='undefined'.toString()">
+ 			 	and e.event_type = #{eventType,jdbcType = VARCHAR}
+ 			</if>
+ 			<if test="eventLevel!=nul and eventLevel!='' and eventLevel!='undefined'.toString()">
+ 			 	and e.event_level = #{eventLevel,jdbcType = VARCHAR}
+ 			</if>
+ 			<if test="eventName!=null and eventName!='' and eventName!='undefined'.toString()">
+ 			 	and e.event_name like '%${eventName}%'
+ 			</if>
+ 			<if test="riverName!=null and riverName!='' and riverName!='undefined'.toString()">
+ 			 	and rr.river_name like '%${riverName}%'
+ 			</if>
+ 			<!-- 事件编码模糊搜索 -->
+ 			<if test="eventCode!=null and eventCode!='' and eventCode!='undefined'.toString()">
+ 			 	and e.event_code like '%${eventCode}%'
+ 			</if>
+ 			<if test="problemType!=null and problemType!='' and problemType!='undefined'.toString()">
+ 			 	and e.problem_type like '${problemType}%'
+ 			</if>
+ 			<if test="userName!=null and userName!='' and userName!='undefined'.toString()">
+ 			 	and u.real_name like '%${userName}%'
+ 			</if>
+ 			<!-- 新增区域树高级查询 -->
+    		<if test="regionIds!=null">
+    		and e.river_id in (select ri.river_id from river ri where ri.region_id in
+    			<foreach collection="regionIds" item="item"  open="(" close=")" index="index" separator=",">  
+    			#{item}
+				</foreach>
+				)
+    		</if>
+    		<if test="type==0">
+    			<if test="regionId!=null and regionId!='' and regionId!='undefined'.toString()">
+    				and e.region_id LIKE 
+				CONCAT((SELECT (
+				CASE WHEN r.level=0 THEN LEFT(region_id,0) 
+				WHEN r.level=1 THEN LEFT(region_id,2)
+				WHEN r.level=2 THEN LEFT(region_id,4)
+				WHEN r.level=3 THEN LEFT(region_id,6)
+				WHEN r.level=4 THEN LEFT(region_id,9)
+				WHEN r.level=5 THEN region_id
+				END)AS region_id
+				FROM region r WHERE region_id LIKE #{regionId}),'%')
+    			</if>
+    			<if test="riverId!=null and riverId!='' and riverId!='undefined'.toString()">
+    				and e.river_id LIKE 
+				CONCAT((SELECT (
+				CASE WHEN r.river_level=0 THEN LEFT(river_id,2) 
+				WHEN r.river_level=1 THEN LEFT(river_id,4)
+				WHEN r.river_level=2 THEN LEFT(river_id,6)
+				WHEN r.river_level=3 THEN LEFT(river_id,8)
+				WHEN r.river_level=4 THEN LEFT(river_id,10)
+				WHEN r.river_level=5 THEN LEFT(river_id,12)
+				WHEN r.river_level=6 THEN river_id
+				END)AS river_id
+				FROM river r WHERE river_id LIKE #{riverId}),'%')
+    			</if>
+    		</if>
+ 			and d1.field = 'event_level'
+ 			and d2.field = 'report_type'
+ 			and d3.field = 'event_type'
+ 			and d4.field ='problem_type'
+ 			<!-- and d4.field = 'log_status' -->
+ 			<if test="eventStatus==null">
+ 			 and e.event_status=1
+ 			</if>
+ 			<if test="eventStatus!=null">
+ 			 and e.event_status=#{eventStatus}
+ 			</if>
+ 			order by e.update_time desc , e.event_time desc
+ 		<if test="min!=null and pageSize!=null">
+ 			LIMIT #{min},#{pageSize}
+ 		</if>
+    	</where>
+    </select>
+    
+    <select id="countEvent" resultType="java.lang.Integer" parameterType="java.util.Map">
+    	select count(distinct e.event_id) from event e left join dict d1 on e.event_level = d1.code left join dict d2 on e.report_type = d2.code  
+    	left join dict d3 on e.event_type = d3.code 
+    	<!-- left join dict d4 on e.event_type = d4.code --> 
+    	left join region r on e.region_id = r.region_id 
+    	left join user u on e.user_id = u.user_id left join river rr on e.river_id = rr.river_id left join workflow_log wl on wl.event_id = e.event_id
+    	left join dict d4 on d4.code = CONCAT(LEFT(e.problem_type,2),'00') 
+    	<where>
+    		<if test="eventIds!=null">  
+             and e.event_id in  
+             <foreach collection="eventIds" item="item"  open="(" close=")" index="index" separator=",">  
+                 #{item}  
+             </foreach>  
+         	</if>  
+         	<if test="patrolRecordId!=null and patrolRecordId!='' and patrolRecordId!='-1'">
+    			and e.patrol_record_id=#{patrolRecordId,jdbcType = INTEGER}
+    		</if>
+    		<if test="eventId!=null">
+    			and e.event_id=#{eventId,jdbcType = INTEGER}
+    		</if>
+    		<if test="reportType!=null and reportType!='' and reportType!='undefined'.toString()">
+    			and e.report_type = #{reportType,jdbcType = INTEGER}
+    		</if>
+    		<if test="startTime!=null">
+ 				and  e.event_time &gt;= #{startTime,jdbcType = TIMESTAMP}
+ 			</if>
+ 			<if test="endTime!=null">
+ 			 	and e.event_time &lt;= #{endTime,jdbcType = TIMESTAMP}
+ 			</if>
+ 			<if test="eventType!=null and eventType!='' and eventType!='undefined'.toString()">
+ 			 	and e.event_type = #{eventType,jdbcType = VARCHAR}
+ 			</if>
+ 			<if test="eventLevel!=nul and eventLevel!='' and eventLevel!='undefined'.toString()">
+ 			 	and e.event_level = #{eventLevel,jdbcType = VARCHAR}
+ 			</if>
+ 			<if test="eventName!=null and eventName!='' and eventName!='undefined'.toString()">
+ 			 	and e.event_name like '%${eventName}%'
+ 			</if>
+ 			<if test="riverName!=null and riverName!='' and riverName!='undefined'.toString()">
+ 			 	and rr.river_name like '%${riverName}%'
+ 			</if>
+ 			<!-- 事件编码模糊搜索 -->
+ 			<if test="eventCode!=null and eventCode!='' and eventCode!='undefined'.toString()">
+ 			 	and e.event_code like '%${eventCode}%'
+ 			</if>
+ 			<if test="problemType!=null and problemType!='' and problemType!='undefined'.toString()">
+ 			 	and e.problem_type like '${problemType}%'
+ 			</if>
+ 			<if test="userName!=null and userName!='' and userName!='undefined'.toString()">
+ 			 	and u.real_name like '%${userName}%'
+ 			</if>
+ 			<!-- 新增区域树高级查询 -->
+    		<if test="regionIds!=null">
+    		and e.river_id in (select ri.river_id from river ri where ri.region_id in
+    			<foreach collection="regionIds" item="item"  open="(" close=")" index="index" separator=",">  
+    			#{item}
+				</foreach>
+				)
+    		</if>
+    		<if test="type==0">
+    			<if test="regionId!=null and regionId!='' and regionId!='undefined'.toString()">
+    				and e.region_id LIKE 
+				CONCAT((SELECT (
+				CASE WHEN r.level=0 THEN LEFT(region_id,0) 
+				WHEN r.level=1 THEN LEFT(region_id,2)
+				WHEN r.level=2 THEN LEFT(region_id,4)
+				WHEN r.level=3 THEN LEFT(region_id,6)
+				WHEN r.level=4 THEN LEFT(region_id,9)
+				WHEN r.level=5 THEN region_id
+				END)AS region_id
+				FROM region r WHERE region_id LIKE #{regionId}),'%')
+    			</if>
+    			<if test="riverId!=null and riverId!='' and riverId!='undefined'.toString()">
+    				and e.river_id LIKE 
+				CONCAT((SELECT (
+				CASE WHEN r.river_level=0 THEN LEFT(river_id,2) 
+				WHEN r.river_level=1 THEN LEFT(river_id,4)
+				WHEN r.river_level=2 THEN LEFT(river_id,6)
+				WHEN r.river_level=3 THEN LEFT(river_id,8)
+				WHEN r.river_level=4 THEN LEFT(river_id,10)
+				WHEN r.river_level=5 THEN LEFT(river_id,12)
+				WHEN r.river_level=6 THEN river_id
+				END)AS river_id
+				FROM river r WHERE river_id LIKE #{riverId}),'%')
+    			</if>
+    		</if>
+ 			and d1.field = 'event_level'
+ 			and d2.field = 'report_type'
+ 			and d3.field = 'event_type'
+ 			and d4.field ='problem_type'
+ 			<!-- and d4.field = 'log_status' -->
+ 			<if test="eventStatus==null">
+ 			 and e.event_status=1
+ 			</if>
+ 			<if test="eventStatus!=null">
+ 			 and e.event_status=#{eventStatus}
+ 			</if>
+    	</where>
+    </select>
+    
+    <select id="queryWorkflowLog" resultMap="workflowLog" parameterType="java.util.Map">
+    	select wfl.*,d.name as log_status_name, u.real_name, u1.real_name as next_real_name 
+    	from workflow_log wfl left join dict d on wfl.log_status = d.code
+    	left join user u on wfl.user_id=u.user_id left join user u1 on wfl.next_user_id=u1.user_id
+    	<where>
+    		<if test="workflowLogId!=null">
+    			and wfl.workflow_log_id = #{workflowLogId, jdbcType = INTEGER}
+    		</if>
+    		<if test="eventId!=null">
+    			and wfl.event_id = #{eventId, jdbcType = INTEGER}
+    		</if>
+    		<if test="taskId!=null">
+    			and wfl.task_id = #{taskId, jdbcType = VARCHAR}
+    		</if>
+    		and d.field = 'log_status'
+ 			order by wfl.workflow_log_id asc
+    	</where>
+    </select>
+    
+    <insert id="addWorkflowLog" parameterType="java.util.Map">
+    <selectKey resultType="java.lang.Long" order="AFTER" keyProperty="WorkflowLogId">
+          SELECT LAST_INSERT_ID()
+      </selectKey>
+    	insert workflow_log(
+    	<if test="eventId!=null">
+    		event_id,
+    	</if>
+    	<if test="userId!=null">
+    		user_id,
+    	</if>
+    	<if test="taskId!=null">
+    		task_id,
+    	</if>
+    	<if test="content!=null and content!=''">
+    		content,
+    	</if>
+    	<if test="imgurl!=null and imgurl!=''">
+    		imgurl,
+    	</if>
+    	<if test="logStatus!=null">
+    		log_status,
+    	</if>
+    	<if test="point!=null and point!=''">
+    		point,
+    	</if>
+    	<if test="nextUserId!=null and nextUserId!=''">
+    		next_user_id,
+    	</if>
+    	accept_time
+    	)
+    	values(
+    		<if test="eventId!=null">
+    			#{eventId, jdbcType = INTEGER},
+    		</if>
+    		<if test="userId!=null">
+    			#{userId, jdbcType = INTEGER},
+    		</if>
+    		<if test="taskId!=null">
+    			#{taskId, jdbcType = VARCHAR},
+    		</if>
+    		<if test="content!=null and content!=''">
+    			#{content, jdbcType = VARCHAR},
+    		</if>
+    		<if test="imgurl!=null and imgurl!=''">
+    			#{imgurl, jdbcType = VARCHAR},
+    		</if>
+    		<if test="logStatus!=null">
+    			#{logStatus, jdbcType = VARCHAR},
+    		</if>
+    		<if test="point!=null and point!=''">
+    			#{point, jdbcType = VARCHAR},
+    		</if>
+    		<if test="nextUserId!=null">
+    			#{nextUserId, jdbcType = INTEGER},
+    		</if>
+    		#{acceptTime, jdbcType = TIMESTAMP}
+    	)
+    </insert>
+    	
+    <update id="updateWorkflowLog" parameterType="java.util.Map">
+    	update workflow_log
+    	<trim prefix="set" suffixOverrides=",">
+  		<if test="content!=null">content = #{content, jdbcType = VARCHAR},</if>
+  		<if test="imgurl!=null and imgurl!=''">imgurl = #{imgurl, jdbcType = VARCHAR},</if>
+  		<if test="imgsmallurl!=null and imgsmallurl!=''">imgsmallurl = #{imgsmallurl, jdbcType = VARCHAR},</if>
+  		<if test="logStatus!=null">log_status = #{logStatus, jdbcType = VARCHAR},</if>
+  		<if test="point!=null">point = #{point, jdbcType = VARCHAR},</if>
+  		<if test="operaTime!=null">opera_time = #{operaTime, jdbcType = TIMESTAMP} ,</if>
+  		<if test="nextUserId!=null">next_user_id = #{nextUserId, jdbcType = INTEGER} ,</if>
+  		<if test="visitDays!=null">visit_days = #{visitDays, jdbcType = VARCHAR} ,</if>
+ 		</trim>
+    	<where>
+    		<if test="workflowLogId!=null">
+    			and workflow_log_id = #{workflowLogId, jdbcType = INTEGER}
+    		</if>
+    		<if test="eventId!=null">
+    			and event_id = #{eventId, jdbcType = INTEGER}
+    		</if>
+    		<if test="taskId!=null">
+    			and task_id = #{taskId, jdbcType = VARCHAR}
+    		</if>
+    	</where> 
+    </update>
+    
+    <select id="queryEventId" parameterType="java.util.Map" resultType="java.lang.Integer">
+    	select event_id from event where event_status=1 and event_type not in (2,4) and user_id=#{userId}
+    </select>
+    
+    <select id="queryEventByPatrol" resultMap="event" parameterType="java.util.Map">
+    	select DISTINCT e.*,d1.name as event_level_name , d2.name as report_type_name , d3.name as event_type_name,d4.name as operaTypeName,
+    	r.region_name as region_name, u.real_name as real_name, rr.river_name as river_name 
+    	from event e left join dict d1 on e.event_level = d1.code left join dict d2 on e.report_type = d2.code  
+    	left join dict d3 on e.event_type = d3.code left join dict d4 on e.event_type = d4.code left join region r on e.region_id = r.region_id 
+    	left join user u on e.user_id = u.user_id left join river rr on e.river_id = rr.river_id left join workflow_log wl on wl.event_id = e.event_id
+		left join patrol_record pr on e.patrol_record_id = pr.patrol_record_id
+		<where>
+ 			and d1.field = 'event_level'
+ 			and d2.field = 'report_type'
+ 			and d3.field = 'event_type'
+ 			and d4.field = 'log_status'
+ 			and e.event_status=1
+ 			<if test="userId!=null">
+			and pr.user_id=#{userId}
+			</if>
+			order by e.event_time desc
+ 		<if test="min!=null and pageSize!=null">
+ 			LIMIT #{min},#{pageSize}
+ 		</if>
+    	</where>
+    </select>
+    
+     <select id="queryEventByUserId" resultMap="event" parameterType="java.util.Map">
+    	select DISTINCT e.*,d1.name as event_level_name , d2.name as report_type_name , d3.name as event_type_name,d4.name as operaTypeName,
+    	r.region_name as region_name, u.real_name as real_name, rr.river_name as river_name 
+    	from event e left join dict d1 on e.event_level = d1.code left join dict d2 on e.report_type = d2.code  
+    	left join dict d3 on e.event_type = d3.code left join dict d4 on e.event_type = d4.code left join region r on e.region_id = r.region_id 
+    	left join user u on e.user_id = u.user_id left join river rr on e.river_id = rr.river_id left join workflow_log wl on wl.event_id = e.event_id
+    	<!-- left join dict d5 on e.san_type=d5.code -->
+    	<where>
+    		<if test="eventIds!=null">  
+             and e.event_id not in  
+             <foreach collection="eventIds" item="item"  open="(" close=")" index="index" separator=",">  
+                 #{item}  
+             </foreach>  
+         	</if>  
+    		<if test="eventId!=null">
+    			and e.event_id=#{eventId,jdbcType = INTEGER}
+    		</if>
+    		<if test="reportType!=null and reportType!='' and reportType!='undefined'.toString()">
+    			and e.report_type = #{reportType,jdbcType = INTEGER}
+    		</if>
+    		<if test="startTime!=null">
+ 				and  e.event_time &gt;= #{startTime,jdbcType = TIMESTAMP}
+ 			</if>
+ 			<if test="endTime!=null">
+ 			 	and e.event_time &lt;= #{endTime,jdbcType = TIMESTAMP}
+ 			</if>
+ 			<if test="eventTypes!=null and eventTypes!='' and eventTypes!='undefined'.toString()">
+ 			 	and e.event_type in (${eventTypes})
+ 			</if>
+ 			<if test="eventLevel!=nul and eventLevel!='' and eventLevel!='undefined'.toString()">
+ 			 	and e.event_level = #{eventLevel,jdbcType = VARCHAR}
+ 			</if>
+ 			<if test="eventName!=null and eventName!='' and eventName!='undefined'.toString()">
+ 			 	and e.event_name like '%${eventName}%'
+ 			</if>
+ 			<if test="riverName!=null and riverName!='' and riverName!='undefined'.toString()">
+ 			 	and rr.river_name like '%${riverName}%'
+ 			</if>
+ 			<if test="userName!=null and userName!='' and userName!='undefined'.toString()">
+ 			 	and u.user_name like '%${userName}%'
+ 			</if>
+ 			<if test="nowUserId!=null">
+    			and e.now_user_id = #{nowUserId,jdbcType = INTEGER}
+    		</if>
+    		<if test="userId!=null">
+    			and e.user_id = #{userId,jdbcType = INTEGER}
+    		</if>
+ 			and d1.field = 'event_level'
+ 			and d2.field = 'report_type'
+ 			and d3.field = 'event_type'
+ 			and d4.field = 'log_status'
+ 			and e.event_status=1
+ 			order by e.update_time desc , e.event_time desc
+ 		<if test="min!=null and pageSize!=null">
+ 			LIMIT #{min},#{pageSize}
+ 		</if>
+    	</where>
+    </select>
+    
+    <select id="countEventByUserId" resultType="java.lang.Integer" parameterType="java.util.Map">
+    	select count(distinct e.event_id) from event e left join dict d1 on e.event_level = d1.code left join dict d2 on e.report_type = d2.code  
+    	left join dict d3 on e.event_type = d3.code left join dict d4 on e.event_type = d4.code left join region r on e.region_id = r.region_id 
+    	left join user u on e.user_id = u.user_id left join river rr on e.river_id = rr.river_id left join workflow_log wl on wl.event_id = e.event_id
+    	<where>
+    		<if test="eventIds!=null">  
+             and e.event_id not in  
+             <foreach collection="eventIds" item="item"  open="(" close=")" index="index" separator=",">  
+                 #{item}  
+             </foreach>  
+         	</if> 
+         	<if test="regionIds!=null">  
+             and e.region_id in 
+             <foreach collection="regionIds" item="item"  open="(" close=")" index="index" separator=",">  
+                 ${item,jdbcType = VARCHAR}  
+             </foreach>  
+         	</if>   
+    		<if test="eventId!=null">
+    			and e.event_id=#{eventId,jdbcType = INTEGER}
+    		</if>
+    		<if test="reportType!=null and reportType!='' and reportType!='undefined'.toString()">
+    			and e.report_type = #{reportType,jdbcType = INTEGER}
+    		</if>
+    		<if test="startTime!=null">
+ 				and  e.event_time &gt;= #{startTime,jdbcType = TIMESTAMP}
+ 			</if>
+ 			<if test="endTime!=null">
+ 			 	and e.event_time &lt;= #{endTime,jdbcType = TIMESTAMP}
+ 			</if>
+ 			<if test="eventTypes!=null and eventTypes!='' and eventTypes!='undefined'.toString()">
+ 			 	and e.event_type in (${eventTypes})
+ 			</if>
+ 			<if test="eventLevel!=nul and eventLevel!='' and eventLevel!='undefined'.toString()">
+ 			 	and e.event_level = #{eventLevel,jdbcType = VARCHAR}
+ 			</if>
+ 			<if test="eventName!=null and eventName!='' and eventName!='undefined'.toString()">
+ 			 	and e.event_name like '%${eventName}%'
+ 			</if>
+ 			<if test="riverName!=null and riverName!='' and riverName!='undefined'.toString()">
+ 			 	and rr.river_name like '%${riverName}%'
+ 			</if>
+ 			<if test="userName!=null and userName!='' and userName!='undefined'.toString()">
+ 			 	and u.user_name like '%${userName}%'
+ 			</if>
+ 			<if test="nowUserId!=null">
+    			and e.now_user_id = #{nowUserId,jdbcType = INTEGER}
+    		</if>
+    		<if test="userId!=null">
+    			and e.user_id = #{userId,jdbcType = INTEGER}
+    		</if>
+    		<!-- <if test="regionId!=null">
+    			and e.region_id LIKE 
+				CONCAT((SELECT (
+				CASE WHEN r.level=0 THEN LEFT(region_id,0) 
+				WHEN r.level=1 THEN LEFT(region_id,2)
+				WHEN r.level=2 THEN LEFT(region_id,4)
+				WHEN r.level=3 THEN LEFT(region_id,6)
+				WHEN r.level=4 THEN LEFT(region_id,9)
+				WHEN r.level=5 THEN region_id
+				END)AS region_id
+				FROM region r WHERE region_id LIKE #{regionId}),'%')
+    		</if> -->
+    		<if test="updateTime!=null">
+    		 	and to_days(e.update_time) = to_days(#{updateTime})
+    		</if>
+    		<if test="eventTime!=null">
+    		 	and to_days(e.event_time) = to_days(#{eventTime})
+    		</if>
+ 			and d1.field = 'event_level'
+ 			and d2.field = 'report_type'
+ 			and d3.field = 'event_type'
+ 			and d4.field = 'log_status'
+ 			and e.event_status=1
+    	</where>
+    </select>
+</mapper>

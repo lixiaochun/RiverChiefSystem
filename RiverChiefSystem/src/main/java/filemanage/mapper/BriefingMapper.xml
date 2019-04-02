@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="filemanage.mapper.BriefingMapper">
+    <resultMap id="BaseResultMap" type="common.model.Briefing">
+        <id column="briefing_id" property="briefingId" jdbcType="INTEGER"/>
+        <result column="briefing_title" property="briefingTitle" jdbcType="VARCHAR"/>
+        <result column="briefing_summary" property="briefingSummary" jdbcType="VARCHAR"/>
+        <result column="briefing_user_id" property="briefingUserId" jdbcType="INTEGER"/>
+        <result column="briefing_status" property="briefingStatus" jdbcType="VARCHAR"/>
+        <result column="region_id" property="regionId" jdbcType="VARCHAR"/>
+        <result column="submit_time" property="submitTime" jdbcType="TIMESTAMP"/>
+        <result column="briefing_sendto_user_id" property="briefingSendtoUserId" jdbcType="INTEGER"/>
+        <result column="briefing_score" property="briefingScore" jdbcType="DOUBLE"/>
+    </resultMap>
+    <resultMap id="ResultMapWithBLOBs" type="common.model.Briefing" extends="BaseResultMap">
+        <result column="briefing_body" property="briefingBody" jdbcType="LONGVARCHAR"/>
+    </resultMap>
+    <resultMap type="common.model.User" id="user">
+        <id column="user_id" property="userId"/>
+        <result column="real_name" property="realName"/>
+        <result column="organization_id" property="organizationId"/>
+        <result column="role_id" property="roleId"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        briefing_id, briefing_title, briefing_summary, briefing_user_id, briefing_status,
+        region_id, submit_time, briefing_sendto_user_id,briefing_score
+    </sql>
+    <sql id="Blob_Column_List">
+        briefing_body
+    </sql>
+    <select id="selectByUser" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        FROM briefing
+        <where>
+            briefing_sendto_user_id=#{userId}
+            <if test="startTime !=null and startTime !=''">
+                and submit_time BETWEEN #{startTime}" 0:0:0"
+            </if>
+            <if test="endTime !=null and endTime !=''">
+                and #{endTime}" 23:59:59"
+            </if>
+            <if test="status !=null and status !=''">
+                and briefing_status =#{status}
+            </if>
+            <if test="title !=null and title !=''">
+                and briefing_title like '%${title}%'
+            </if>
+        </where>
+        order by submit_time desc
+
+    </select>
+    <select id="selectSelf" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        FROM briefing
+        <where>
+            briefing_user_id=#{userId}
+            <if test="startTime !=null and startTime !=''">
+                and submit_time BETWEEN '${startTime} 0:0:0'
+            </if>
+            <if test="endTime !=null and endTime !=''">
+                and '${endTime} 23:59:59'
+            </if>
+            <if test="status !=null and status !=''">
+                and briefing_status =#{status}
+            </if>
+            <if test="title !=null and title !=''">
+                and briefing_title like '%${title}%'
+            </if>
+        </where>
+        order by submit_time desc
+
+    </select>
+    <select id="selectByRegion" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM briefing
+        <where>
+            region_id like '${regionId}%'
+            <if test="startTime !=null and startTime !=''">
+                and submit_time BETWEEN '${startTime} 0:0:0'
+            </if>
+            <if test="endTime !=null and endTime !=''">
+                and '${endTime} 23:59:59'
+            </if>
+            <if test="status !=null and status !=''">
+                and briefing_status =#{status}
+            </if>
+            <if test="title !=null and title !=''">
+                and briefing_title like '%${title}%'
+            </if>
+        </where>
+        order by submit_time desc
+
+    </select>
+    <select id="findLeader" resultMap="user">
+        SELECT
+            user_id,
+            real_name
+        FROM user
+        WHERE organization_id = (SELECT organization_id
+                                 FROM user
+                                 WHERE user_id = #{userId}) AND role_id = 2;
+    </select>
+    <select id="findUnderling" resultType="java.lang.Integer">
+        SELECT user_id
+        FROM user
+        WHERE organization_id = (SELECT organization_id
+                                 FROM user
+                                 WHERE user_id = #{userId}) AND role_id = 4;
+    </select>
+    <select id="findOrganization" resultMap="user">
+        SELECT
+            organization_id,
+            role_id
+        FROM user
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="selectByPrimaryKey" resultMap="ResultMapWithBLOBs" parameterType="java.lang.Integer">
+        select
+        <include refid="Base_Column_List"/>
+        ,
+        <include refid="Blob_Column_List"/>
+        from briefing
+        where briefing_id = #{briefingId,jdbcType=INTEGER}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+        DELETE FROM briefing
+        WHERE briefing_id = #{briefingId,jdbcType=INTEGER}
+    </delete>
+    <insert id="insert" parameterType="common.model.Briefing">
+        INSERT INTO briefing (briefing_id, briefing_title, briefing_summary,
+                              briefing_user_id, briefing_status, region_id,
+                              submit_time, briefing_sendto_user_id, briefing_body)
+        VALUES (#{briefingId,jdbcType=INTEGER}, #{briefingTitle,jdbcType=VARCHAR}, #{briefingSummary,jdbcType=VARCHAR},
+                #{briefingUserId,jdbcType=INTEGER}, #{briefingStatus,jdbcType=VARCHAR}, #{regionId,jdbcType=VARCHAR},
+                #{submitTime,jdbcType=TIMESTAMP}, #{briefingSendtoUserId,jdbcType=INTEGER},
+                #{briefingBody,jdbcType=LONGVARCHAR})
+    </insert>
+
+    <update id="updateByPrimaryKeyWithBLOBs" parameterType="common.model.Briefing">
+        UPDATE briefing
+        SET briefing_title          = #{briefingTitle,jdbcType=VARCHAR},
+            briefing_summary        = #{briefingSummary,jdbcType=VARCHAR},
+            briefing_user_id        = #{briefingUserId,jdbcType=INTEGER},
+            briefing_status         = #{briefingStatus,jdbcType=VARCHAR},
+            region_id               = #{regionId,jdbcType=VARCHAR},
+            submit_time             = #{submitTime,jdbcType=TIMESTAMP},
+            briefing_body           = #{briefingBody,jdbcType=LONGVARCHAR},
+            briefing_sendto_user_id = #{briefingSendtoUserId,jdbcType=INTEGER}
+        WHERE briefing_id = #{briefingId,jdbcType=INTEGER}
+    </update>
+    <update id="updateStatus" parameterType="common.model.Briefing">
+        UPDATE briefing
+        SET
+            briefing_status = #{briefingStatus,jdbcType=VARCHAR}
+        WHERE briefing_id = #{briefingId,jdbcType=INTEGER}
+    </update>
+    <update id="updateScore">
+        update briefing
+        set
+        briefing_score=#{briefingScore}
+        where briefing_id =#{briefingId}
+    </update>
+
+
+    <select id="selectListForPublic" resultMap="BaseResultMap">
+        select briefing_id, briefing_title, briefing_summary, briefing_user_id, briefing_status,
+        region_id, submit_time
+        from briefing
+        where briefing_status=3
+        order by submit_time desc
+        limit #{numstart},#{size}
+    </select>
+
+</mapper>

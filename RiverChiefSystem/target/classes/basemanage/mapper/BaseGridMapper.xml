@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="basemanage.mapper.BaseGridMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseGrid" type="basemanage.model.BaseGrid">
+        <id column="id" property="id" jdbcType="VARCHAR" />
+        <result column="name" property="name" jdbcType="VARCHAR" />
+        <result column="parent_id" property="parentId" jdbcType="VARCHAR" />
+        <result column="is_parent" property="isParent" jdbcType="VARCHAR" />
+        <result column="level" property="level" jdbcType="VARCHAR" />
+        <result column="x" property="x" jdbcType="DOUBLE" />
+        <result column="y" property="y" jdbcType="DOUBLE" />
+    </resultMap>
+
+
+    <select id="selectBaseGrid" resultMap="BaseGrid" parameterType="map">
+        SELECT id,name,parent_id,is_parent,level,longitute as x,latitude as y
+        FROM base_grid where parent_id = #{id}
+    </select>
+    
+        
+    
+</mapper>

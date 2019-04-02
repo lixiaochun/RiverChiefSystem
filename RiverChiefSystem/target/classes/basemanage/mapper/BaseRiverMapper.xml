@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="basemanage.mapper.BaseRiverMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseRiver" type="basemanage.model.BaseRiver">
+        <id column="id" property="id" jdbcType="VARCHAR" />
+        <result column="name" property="name" jdbcType="VARCHAR" />
+        <result column="parent_id" property="parentId" jdbcType="VARCHAR" />
+        <result column="is_parent" property="isParent" jdbcType="VARCHAR" />
+        <result column="level" property="level" jdbcType="VARCHAR" />
+    </resultMap>
+
+    
+    <!-- 根据code查询点坐标数据 -->
+    <select id="selectBaseRiver" resultMap="BaseRiver" parameterType="map">
+        SELECT id,name,parent_id,is_parent,level
+        FROM base_river where parent_id = #{id}
+    </select>
+    
+    
+</mapper>

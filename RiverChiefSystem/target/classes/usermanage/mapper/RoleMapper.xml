@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+ <mapper namespace="usermanage.mapper.RoleMapper">
+	
+	<!-- 角色 -->
+	<resultMap type="common.model.Role" id="role">
+	 	<id column="role_id" property="roleId" />
+        <result column="role_name" property="roleName" />
+        <result column="status" property="status" />
+        <result column="role_desc" property="roleDesc" />
+        <!-- <result column="organization_id" property="organizationId" />
+        <result column="organization_name" property="organizationName" />
+        <result column="river_id" property="riverId" />
+        <result column="river_name" property="riverName" />
+        <result column="level_name" property="levelName" /> 
+        <result column="role_type" property="roleType" />
+        <result column="role_type_name" property="roleTypeName" />-->
+    </resultMap>
+    
+    <!-- 角色权限关联 -->
+    <resultMap type="common.model.RolePermissionsRelation" id="rolePermissionsRelation">
+    	<id column="relation_id" property="relationId" />
+        <result column="permissions_id" property="permissionsId" />
+        <result column="role_id" property="roleId" />
+        <result column="status" property="status" />
+    </resultMap>
+    
+    <!-- 权限 -->
+    <resultMap type="common.model.Permissions" id="permissions">
+	 	<id column="permissions_id" property="permissionsId" />
+        <result column="permissions_name" property="permissionsName" />
+        <result column="menu_id" property="menuId" />
+        <result column="status" property="status" />
+    </resultMap>
+    
+    <!-- 菜单 -->
+    <resultMap type="common.model.Menu" id="menu">
+	 	<id column="menu_id" property="menuId" />
+        <result column="menu_name" property="menuName" />
+        <result column="menu_url" property="menuUrl" />
+        <result column="menu_src" property="menuSrc" />
+        <result column="menu_level" property="menuLevel" />
+        <result column="parent_id" property="parentId" />
+        <result column="view_order" property="viewOrder" />
+        <result column="status" property="status" />
+        <result column="val" property="val" />
+    </resultMap>
+    
+    <select id="queryRoleList" resultMap="role" parameterType="java.util.Map">
+    	select r.* from Role r
+    	<!-- ,o.organization_name,d.name as levelName,d1.name as roleTypeName,ri.river_name as riverName
+    	 from Role r left join organization o on r.organization_id = o.organization_id 
+    	 left join dict d on o.level=d.code left join dict d1 on r.role_type=d1.code 
+    	 left join river ri on r.river_id = ri.river_id -->
+    	<where>
+    	<!-- <if test="organizationId!=null">
+    		and r.organization_id = #{organizationId}
+    	</if> -->
+    	<if test="roleId!=null">
+    		and r.role_id = #{roleId}
+    	</if>
+    	<!-- <if test="organizationName!=null and organizationName!='' and organizationName!='undefined'.toString()">
+    		and o.organization_name like '%${organizationName}%'
+    	</if> -->
+    	<if test="roleName!=null and roleName!='' and roleName!='undefined'.toString()">
+    		and r.role_name like '%${roleName}%'
+    	</if>
+    	<!-- <if test="level!=null">
+    		and o.level = #{level}
+    	</if>
+    	<if test="riverName!=null and riverName!='' and riverName!='undefined'.toString()">
+    		and ri.river_name like '%${riverName}%'
+    	</if> -->
+    	and r.status = 1
+    	<!-- and d.field='level'
+    	and d1.field='role_type' -->
+    	order by r.role_id
+    	<if test="min!=null and pageSize!=null">
+ 			LIMIT #{min},#{pageSize}
+ 		</if>
+    	</where>
+    </select>
+    
+    <select id="countRole" resultType="java.lang.Integer" parameterType="java.util.Map">
+    	select count(*) from Role r 
+    	<!-- left join organization o on r.organization_id = o.organization_id 
+    	 left join dict d on o.level=d.code left join dict d1 on r.role_type=d1.code 
+    	 left join river ri on r.river_id = ri.river_id -->
+    	<where>
+    	<!-- <if test="organizationId!=null">
+    		and r.organization_id = #{organizationId}
+    	</if> -->
+    	<if test="roleId!=null">
+    		and r.role_id = #{roleId}
+    	</if>
+    	<!-- <if test="organizationName!=null and organizationName!='' and organizationName!='undefined'.toString()">
+    		and o.organization_name like '%${organizationName}%'
+    	</if> -->
+    	<if test="roleName!=null and roleName!='' and roleName!='undefined'.toString()">
+    		and r.role_name like '%${roleName}%'
+    	</if>
+    	<!-- <if test="level!=null">
+    		and o.level = #{level}
+    	</if>
+    	<if test="riverName!=null and riverName!='' and riverName!='undefined'.toString()">
+    		and ri.river_name like '%${riverName}%'
+    	</if> -->
+    	and r.status = 1
+    	<!-- and d.field='level'
+    	and d1.field='role_type' -->
+    	order by r.role_id
+    	</where>
+    </select>
+    
+    <insert id="newRole" parameterType="java.util.Map" >
+    <selectKey resultType="java.lang.Integer" order="AFTER" keyProperty="id">
+		SELECT LAST_INSERT_ID() AS id
+	</selectKey>
+    	INSERT INTO role
+         <foreach collection="map.keys" item="key" open="(" close=")" separator="," >  
+            ${key}  
+         </foreach>  
+         values   
+         <foreach collection="map.keys"  item="key" open="(" close=")" separator=",">  
+            #{map[${key}]}  
+         </foreach>  	
+    </insert>
+    
+    <update id="updateRole" parameterType="java.util.Map">
+    	UPDATE role
+    	<trim prefix="set" suffixOverrides=",">
+  		<if test="status!=null">status = #{status},</if>
+  		<if test="roleDesc!=null">role_desc = #{roleDesc},</if>
+  		<if test="roleName!=null">role_name = #{roleName},</if>
+  		<if test="roleType!=null">role_type = #{roleType},</if>
+  		<if test="organizationId!=null">organization_id = #{organizationId},</if>
+  		<if test="riverId!=null">river_id = #{riverId},</if>
+ 		</trim>
+		WHERE role_id= #{roleId}
+    </update>
+    <!-- 
+    <insert id="newOrgRoleRelation" parameterType="java.util.Map">
+    	INSERT INTO org_role_relation(role_id,organization_id)
+		VALUES (
+			#{roleId, jdbcType = INTEGER},
+			#{organizationId, jdbcType = INTEGER}
+		)
+    </insert> -->
+    
+    <!-- 查找权限 -->
+    <select id="queryPermissions"  resultMap="permissions" parameterType="java.util.Map">
+    	select * from permissions
+    	<where>
+    	<if test="menuId!=null">
+    		and menu_id = #{menuId}
+    	</if>
+    	and status=1
+    	</where>
+    </select>
+    
+    <!-- 查找角色权限关联表 -->
+    <select id="queryRolePermissionsRelation" resultMap="rolePermissionsRelation" parameterType="java.util.Map">
+    	select * from role_permissions_relation 
+    	<where>
+    	<if test="roleId!=null">
+    		and role_id = #{roleId}
+    	</if>
+    	<if test="permissionsId!=null">
+    		and permissions_id = #{permissionsId}
+    	</if>
+    	<if test="status!=null">
+    		and status=#{status}
+    	</if>
+    	</where>
+    </select>
+    
+    <!-- 添加角色权限关联信息 -->
+    <insert id="newRolePermissionsRelation"  parameterType="permissions" useGeneratedKeys="true" keyProperty="relationId">
+    	insert role_permissions_relation(role_id,permissions_id,status)
+    	values (
+    		#{roleId, jdbcType = INTEGER},
+			#{permissionsId, jdbcType = INTEGER},
+			#{status, jdbcType = INTEGER}
+    	)
+    </insert>
+    
+    <update id="updateRolePermissionsRelation" parameterType="java.util.Map">
+    	UPDATE role_permissions_relation
+		SET status = #{status}
+		<where>
+			<if test="roleId!=null">
+				and role_id = #{roleId}
+			</if>
+			<if test="permissionsId!=null">
+				and permissions_id = #{permissionsId}
+			</if>
+		</where>
+    </update>
+    
+    <update id="updatePermission" parameterType="java.util.Map">
+    	UPDATE role_permissions_relation
+		SET status = #{status}
+		<where>
+			<if test="roleId!=null">
+				and role_id = #{roleId}
+			</if>
+			<if test="menuId">
+				and menu_id=#{menuId}
+			</if>
+		</where>
+    </update>
+    
+    <insert id="newPermissions" parameterType="common.model.Permissions" useGeneratedKeys="true" keyProperty="permissions">
+    	INSERT INTO permissions(permission_name, role_id, menu_id,status)
+		VALUES (
+			#{permissionName, jdbcType = VARCHAR},
+			#{roleId, jdbcType = INTEGER},
+			#{menuId, jdbcType = INTEGER},
+			#{status, jdbcType = INTEGER}
+		);		
+    </insert>
+    
+    <select id="queryMenuList" resultMap="menu" parameterType="java.util.Map">
+    	select m.*,if(pp.menu_id is null,0,1) as val from (select * from menu)m left join 
+		(select p.menu_id from role_permissions_relation rpr , permissions p 
+		where 
+		rpr.role_id=#{roleId} and rpr.permissions_id = p.permissions_id)pp 
+		on m.menu_id= pp.menu_id
+    </select>
+    
+    <insert id="insertRole" parameterType="java.util.List">
+    	<selectKey resultType="java.lang.Integer" keyProperty="id" order="AFTER">
+			SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO role(role_id , role_name , status ,role_desc )
+		values
+		<foreach collection="list" item="role" index="index" separator=",">
+		(
+			#{role.roleId, jdbcType = INTEGER},
+			#{role.roleName, jdbcType = VARCHAR},
+			#{role.status, jdbcType = INTEGER},
+			#{role.roleDesc, jdbcType = VARCHAR}
+		)
+		</foreach>
+    </insert>
+    
+    <update id="updateRoleList" parameterType="java.util.List">
+    	<foreach collection="list" item="role" index="index" separator=";">  
+                update role   
+                <set>  
+				role_name=#{role.roleName, jdbcType = VARCHAR},
+				status=#{role.status, jdbcType = INTEGER},
+				role_desc=#{role.roleDesc, jdbcType = VARCHAR}
+                </set>  
+                where role_id=#{role.roleId, jdbcType = INTEGER}
+         </foreach>  
+    </update>
+</mapper>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- WATERINTAKE -->
+<mapper namespace="onemap.mapper.WaterIntakeMapper">
+    
+    <!-- 表所有字段 -->
+    <sql id="allColumns">
+        WATER_INTAKE_ID, LONGITUTE, LATITUDE, NAME, REGION_ID, RIVER_ID, 
+        TYPE, AREA, ADMINISTRATION, IMGURL, NUMBER
+    </sql>
+    
+    <!-- 根据code、regionId、riverId查询点坐标数据 -->
+    <select id="findWaterIntakeAll" resultType="map" parameterType="map">
+        SELECT
+        WATER_INTAKE_ID as id, LONGITUTE as x, LATITUDE as y
+        FROM WATER_INTAKE WHERE 1=1
+        <if test="code != null and code != 0">
+            AND TYPE LIKE CONCAT( #{code},'%')
+        </if>
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        <if test="riverId != null and riverId != ''">
+            AND RIVER_ID LIKE CONCAT( #{riverId},'%')
+        </if>
+    </select>
+    
+	<!-- 根据id查询详细数据 -->
+    <select id="findWaterIntakeById" resultType="map" parameterType="int">
+        SELECT *,CONCAT( LONGITUTE,',',LATITUDE) as point,
+        (SELECT region_name FROM region WHERE region.region_id=WATER_INTAKE.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=WATER_INTAKE.river_id) AS river_name,
+		(SELECT value FROM base_info_type WHERE base_info_type.code=WATER_INTAKE.type) AS type_name
+        FROM WATER_INTAKE WHERE WATER_INTAKE_ID = #{waterIntakeId}
+    </select>
+    
+    <!-- 根据code、regionId分页查询详细数据列表 -->
+    <select id="findWaterIntakeByPage" resultType="map" parameterType="map">
+        SELECT *,WATER_INTAKE_ID as id,
+        (SELECT region_name FROM region WHERE region.region_id=WATER_INTAKE.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=WATER_INTAKE.river_id) AS river_name,
+		(SELECT value FROM base_info_type WHERE base_info_type.code=WATER_INTAKE.type) AS type_name
+        FROM WATER_INTAKE WHERE 1=1
+        <if test="code != null and code != 0">
+            AND TYPE LIKE CONCAT( #{code},'%')
+        </if>
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        LIMIT ${curPage},${pageNumber}
+    </select>
+    
+    <!-- 获取分页查询详情 count总数 page总页数-->
+    <select id="getPagingInformation" resultType="map" parameterType="map">
+		SELECT COUNT(*) AS count,CEILING(COUNT(*)/${pageNumber}) AS page FROM WATER_INTAKE WHERE 1=1
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+	</select>
+    
+    <select id="findMaxId" resultType="int" parameterType="int">
+        SELECT IFNULL(max(WATER_INTAKE_ID),0) from WATER_INTAKE
+    </select>
+    
+	<!-- 插入数据 -->
+    <insert id="insertWaterIntake" parameterType="map">
+        INSERT INTO WATER_INTAKE (<include refid="allColumns" />)
+        VALUES (
+            #{id},
+            #{longitute},
+            #{latitude},
+            #{name},
+            #{regionId},
+            #{riverId},
+            #{type},
+            #{area},
+            #{administration},
+            #{imgurl},
+            #{number}
+        )
+    </insert>
+    
+    <!-- 修改数据 -->
+    <update id="updateWaterIntake" parameterType="map">
+        UPDATE WATER_INTAKE SET
+            LONGITUTE = #{longitute},
+            LATITUDE = #{latitude},
+            NAME = #{name},
+            REGION_ID = #{regionId},
+            RIVER_ID = #{riverId},
+            TYPE = #{type},
+            AREA = #{area},
+            ADMINISTRATION = #{administration},
+            IMGURL = #{imgurl},
+            NUMBER = #{number}
+        WHERE WATER_INTAKE_ID = #{id}
+    </update>
+    
+    <!-- 根据主键删除数据 -->
+    <delete id="deleteWaterIntakeById" parameterType="int">
+        DELETE FROM WATER_INTAKE WHERE WATER_INTAKE_ID = #{waterIntakeId}
+    </delete>
+    
+</mapper>

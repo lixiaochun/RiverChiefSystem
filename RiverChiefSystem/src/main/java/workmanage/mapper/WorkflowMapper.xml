@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+ <mapper namespace="workmanage.mapper.WorkflowMapper">
+ 
+ 	 <resultMap id="historicProcessInstanceResultMap" type="org.activiti.engine.impl.persistence.entity.HistoricProcessInstanceEntity">
+    <id property="id" column="ID_" jdbcType="VARCHAR" />
+    <result property="processInstanceId" column="PROC_INST_ID_" jdbcType="VARCHAR" />
+    <result property="businessKey" column="BUSINESS_KEY_" jdbcType="VARCHAR"/>
+    <result property="processDefinitionId" column="PROC_DEF_ID_" jdbcType="VARCHAR" />
+    <result property="processDefinitionName" column="PROC_DEF_NAME_" jdbcType="VARCHAR" /> 
+    <result property="processDefinitionKey" column="PROC_DEF_KEY_" jdbcType="VARCHAR" />
+    <result property="processDefinitionVersion" column="PROC_DEF_VERSION_" jdbcType="INTEGER" />
+    <result property="deploymentId" column="DEPLOYMENT_ID_" jdbcType="VARCHAR" />
+    <result property="startTime" column="START_TIME_" jdbcType="TIMESTAMP" />
+    <result property="endTime" column="END_TIME_" jdbcType="TIMESTAMP" />
+    <result property="durationInMillis" column="DURATION_" jdbcType="BIGINT" />
+    <result property="startUserId" column="START_USER_ID_" jdbcType="VARCHAR" />
+    <result property="startActivityId" column="START_ACT_ID_" jdbcType="VARCHAR" />
+    <result property="endActivityId" column="END_ACT_ID_" jdbcType="VARCHAR" />
+    <result property="superProcessInstanceId" column="SUPER_PROCESS_INSTANCE_ID_" jdbcType="VARCHAR" />
+    <result property="deleteReason" column="DELETE_REASON_" jdbcType="VARCHAR" />
+    <result property="tenantId" column="TENANT_ID_" jdbcType="VARCHAR" />
+    <result property="name" column="NAME_" jdbcType="VARCHAR" />
+  </resultMap>
+	
+	<resultMap id="processInstanceResultMap" type="org.activiti.engine.impl.persistence.entity.ExecutionEntity">
+    <id property="id" column="ID_" jdbcType="VARCHAR" />
+    <result property="revision" column="REV_" jdbcType="INTEGER" />
+    <result property="processInstanceId" column="PROC_INST_ID_" jdbcType="VARCHAR" />
+    <result property="businessKey" column="BUSINESS_KEY_" jdbcType="VARCHAR" />
+    
+    <!-- Lowercase 'columns', as they are filled in during a query and are not mapped directly to a table column -->
+    <result property="processDefinitionId" column="PROC_DEF_ID_" jdbcType="VARCHAR" />
+    <result property="processDefinitionName" column="ProcessDefinitionName" jdbcType="VARCHAR" /> 
+    <result property="processDefinitionKey" column="ProcessDefinitionKey" jdbcType="VARCHAR" />
+    <result property="processDefinitionVersion" column="ProcessDefinitionVersion" jdbcType="INTEGER" />
+    <result property="deploymentId" column="DeploymentId" jdbcType="VARCHAR" />
+    
+    <result property="activityId" column="ACT_ID_" jdbcType="VARCHAR" />
+    <result property="isActive" column="IS_ACTIVE_" jdbcType="BOOLEAN" />
+    <result property="isConcurrent" column="IS_CONCURRENT_" jdbcType="BOOLEAN" />
+    <result property="isScope" column="IS_SCOPE_" jdbcType="BOOLEAN" />
+    <result property="isEventScope" column="IS_EVENT_SCOPE_" jdbcType="BOOLEAN" />
+    <result property="parentId" column="PARENT_ID_" jdbcType="VARCHAR" />
+    <result property="superExecutionId" column="SUPER_EXEC_" jdbcType="VARCHAR" />
+    <result property="suspensionState" column="SUSPENSION_STATE_" jdbcType="INTEGER"/>
+    <result property="cachedEntityState" column="CACHED_ENT_STATE_" jdbcType="INTEGER"/>
+    <result property="tenantId" column="TENANT_ID_" jdbcType="VARCHAR" />
+    <result property="name" column="NAME_" jdbcType="VARCHAR" />
+    <result property="lockTime" column="LOCK_TIME_" jdbcType="TIMESTAMP" />
+  </resultMap>
+  
+ 	<!-- <select id="selectHistoricProcessInstances" parameterType="java.util.Map" resultMap="historicProcessInstanceResultMap">
+    select distinct ahp.* , arp.KEY_ as PROC_DEF_KEY_, arp.NAME_ as PROC_DEF_NAME_, 
+	
+	arp.VERSION_ as PROC_DEF_VERSION_, arp.DEPLOYMENT_ID_ as DEPLOYMENT_ID_ from ACT_HI_TASKINST aht
+
+	left join ACT_RU_EXECUTION are  ON are.PROC_INST_ID_ = aht.PROC_INST_ID_
+
+	inner join ACT_RE_PROCDEF arp on are.PROC_DEF_ID_ = arp.ID_ 
+	
+	inner join ACT_RE_PROCDEF arp on aht.PROC_DEF_ID_ = arp.ID_ 
+
+	RIGHT JOIN ACT_HI_PROCINST ahp on ahp.PROC_DEF_ID_ = arp.ID_ 
+
+	WHERE 
+		aht.ASSIGNEE_ = #{userId}
+		
+		and aht.END_TIME_ is not null and ahp.END_TIME_ is not null
+
+	and are.PARENT_ID_ is null 
+
+	order by ahp.BUSINESS_KEY_ asc LIMIT 2147483647 OFFSET 0 
+  </select> -->
+  
+  <select id="selectHistoricProcessInstances" parameterType="java.util.Map" resultMap="historicProcessInstanceResultMap">
+     select distinct ahp.* , arp.KEY_ as PROC_DEF_KEY_, arp.NAME_ as PROC_DEF_NAME_, 
+	
+	arp.VERSION_ as PROC_DEF_VERSION_, arp.DEPLOYMENT_ID_ as DEPLOYMENT_ID_ from ACT_HI_TASKINST aht
+
+	left join ACT_HI_PROCINST ahp on ahp.PROC_INST_ID_ = aht.PROC_INST_ID_ 
+
+	inner join ACT_RE_PROCDEF arp on aht.PROC_DEF_ID_ = arp.ID_ 
+
+	left JOIN ACT_RU_EXECUTION are  ON are.PROC_INST_ID_ = aht.PROC_INST_ID_ 
+
+	WHERE 
+		aht.ASSIGNEE_ = #{userId}
+		
+		and aht.END_TIME_ is not null and ahp.END_TIME_ is not null
+
+	and are.PARENT_ID_ is null 
+
+	order by ahp.BUSINESS_KEY_ asc LIMIT 2147483647 OFFSET 0 
+  </select>
+  
+  <select id="selectProcessInstances" parameterType="java.util.Map" resultMap="processInstanceResultMap">
+    select distinct are.* , arp.KEY_ as ProcessDefinitionKey, arp.ID_ as ProcessDefinitionId, 
+    
+	arp.NAME_ as ProcessDefinitionName, arp.VERSION_ as ProcessDefinitionVersion, arp.DEPLOYMENT_ID_ as DeploymentId  from ACT_HI_TASKINST aht
+
+	left join ACT_RU_EXECUTION are  ON are.PROC_INST_ID_ = aht.PROC_INST_ID_
+
+	inner join ACT_RE_PROCDEF arp on are.PROC_DEF_ID_ = arp.ID_ 
+
+	WHERE 
+		aht.ASSIGNEE_ = #{userId}
+		
+		<!-- 在办 -->
+		<if test="type==2">
+			and aht.END_TIME_ is not null and are.PROC_INST_ID_ not in (
+			
+			select distinct are.PROC_INST_ID_  from ACT_HI_TASKINST aht
+
+			left join ACT_RU_EXECUTION are  ON are.PROC_INST_ID_ = aht.PROC_INST_ID_
+
+			inner join ACT_RE_PROCDEF arp on are.PROC_DEF_ID_ = arp.ID_ 
+
+			WHERE aht.ASSIGNEE_ = #{userId} and aht.END_TIME_ is null and are.PARENT_ID_ is null and (are.SUSPENSION_STATE_ = 1)
+		)
+		</if>
+		<!-- 待办 -->
+		<if test="type==3">
+			and aht.END_TIME_ is null
+		</if>
+
+		and are.PARENT_ID_ is null 
+	
+		and (are.SUSPENSION_STATE_ = 1)
+
+	order by are.BUSINESS_KEY_ asc LIMIT 2147483647 OFFSET 0 
+  </select>
+  
+  <!-- 查找当前事件的办理人 -->
+  <select id="selectTaskAssignee" parameterType="java.util.Map" resultType="java.lang.String">
+    select distinct u.real_name  from user u left join ACT_HI_TASKINST aht on u.user_id = aht.ASSIGNEE_
+
+	left join ACT_RU_EXECUTION are  ON are.PROC_INST_ID_ = aht.PROC_INST_ID_
+
+	inner join ACT_RE_PROCDEF arp on are.PROC_DEF_ID_ = arp.ID_ 
+
+	WHERE aht.END_TIME_ is null
+
+		and are.PARENT_ID_ is null 
+		and are.BUSINESS_KEY_ = #{eventId}
+	
+		and (are.SUSPENSION_STATE_ = 1)
+
+	order by are.BUSINESS_KEY_ asc LIMIT 2147483647 OFFSET 0 
+  </select>
+    
+</mapper>

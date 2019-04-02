@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="geojson.mapper.GeojsonMapper">
+
+    <!-- 查询所有数据 -->
+    <select id="selectGeojson" resultType="map" parameterType="map">
+		SELECT gid,name,ST_AsGeoJson(geom) as geometry FROM fuding
+    </select>
+    
+</mapper>
+
+
+
+
+

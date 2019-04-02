@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="workmanage.mapper.EventFileMapper">
+	<resultMap type="common.model.EventFile" id="eventFile">
+		<id column="event_file_id" property="eventFileId" />
+        <result column="event_id" property="eventId" />
+        <result column="workflow_log_id" property="workflowLogId" />
+        <result column="file_name" property="fileName" />
+        <result column="file_url" property="fileUrl" />
+        <result column="type" property="type" />
+        <result column="status" property="status" />
+        <result column="small_url" property="smallUrl" />
+        <result column="submit_time" property="submitTime" />
+        <result column="image_time" property="imageTime" />
+        <result column="remark" property="remark" />
+	</resultMap>
+	
+	<insert id="addEventFile" parameterType="java.util.List">
+    	<selectKey resultType="java.lang.Integer" keyProperty="id" order="AFTER">
+			SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO event_file( event_id,workflow_log_id , file_name ,
+		file_url , type , status , small_url,submit_time ,remark)
+		values
+		<foreach collection="list" item="eventFile" index="index" separator=",">
+		(
+			#{eventFile.eventId, jdbcType = INTEGER},
+			#{eventFile.workflowLogId, jdbcType = VARCHAR},
+			#{eventFile.fileName, jdbcType = VARCHAR},
+			#{eventFile.fileUrl, jdbcType = VARCHAR},
+			#{eventFile.type, jdbcType = INTEGER},
+			#{eventFile.status, jdbcType = VARCHAR},
+			#{eventFile.smallUrl, jdbcType = INTEGER},
+			#{eventFile.submitTime, jdbcType = TIMESTAMP},
+			#{eventFile.remark, jdbcType = VARCHAR}
+		)
+		</foreach>
+    </insert>
+    
+    <select id="queryEventFile" parameterType="java.util.Map" resultMap="eventFile">
+    	select * from event_file 
+    	<where>
+    	<if test="eventId!=null">
+    		and event_id = #{eventId}
+    	</if>
+    	<if test="workflowLogId!=null">
+    		and workflow_log_id = #{workflowLogId}
+    	</if>
+    	and status = 1
+    	</where>
+    </select>
+    
+    <update id="deleteEventByImg" parameterType="java.util.Map">
+    	update event_file set status = 0 where event_id = #{eventId}
+    </update>
+</mapper>

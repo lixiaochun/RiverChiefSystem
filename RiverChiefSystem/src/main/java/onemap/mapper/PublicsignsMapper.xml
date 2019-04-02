@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- PUBLICSIGNS -->
+<mapper namespace="onemap.mapper.PublicsignsMapper">
+    
+    <!-- 表所有字段 -->
+    <sql id="allColumns">
+        PUBLICSIGNS_ID, PUBLICSIGNS_CODE, NAME, REGION_ID, RIVER_ID, LONGITUTE, 
+        LATITUDE, RIVER_START, RIVER_END, RIVER_LENGTH, QU_RIVERCHIEF, QU_TELPHONE, 
+        ZHEN_RIVERCHIEF, ZHEN_TELPHONE, CUN_RIVERCHIEF, CUN_TELPHONE, DEPARTMENT, RIVERMANAGER, 
+        MANAGER_TELPHONE, DUTY, RIVERMANAGER_DUTY, SHI_HOTLINE, XIAN_HOTLINE, TARGET, 
+        QRCODE, IMGURL, BASE_INFO_TYPE
+    </sql>
+    
+    <!-- 根据code、regionId、riverId查询点坐标数据 -->
+    <select id="findPublicsignsAll" resultType="map" parameterType="map">
+        SELECT
+        PUBLICSIGNS_ID as id, LONGITUTE as x, LATITUDE as y,name,BASE_INFO_TYPE as type
+        FROM PUBLICSIGNS WHERE 1=1
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        <if test="riverId != null and riverId != ''">
+            AND RIVER_ID LIKE CONCAT( #{riverId},'%')
+        </if>
+        <!-- 根据keyword进行模糊查询 -->
+        <if test="keyword != null and keyword != ''">
+            AND NAME LIKE CONCAT( '%',#{keyword},'%')
+        </if>
+       	<!-- 根据keyword进行模糊查询 -->
+        <if test="regionName != null and regionName != ''">
+            AND NAME LIKE CONCAT( '%',#{regionName},'%')
+        </if>
+        <!-- keyword=''时，排除县级公示牌 -->
+        <if test="keyword == '' and regionName == ''">
+            AND RIVERMANAGER != ''
+        </if>
+        <if test="code != null and code != 0">
+            AND BASE_INFO_TYPE LIKE CONCAT( #{code},'%')
+        </if>
+    </select>
+    
+	<!-- 根据id查询详细数据 -->
+    <select id="findPublicsignsById" resultType="map" parameterType="int">
+		SELECT  *,CONCAT( LONGITUTE,',',LATITUDE) as point,
+        (SELECT region_name FROM region WHERE region.region_id=PUBLICSIGNS.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=PUBLICSIGNS.river_id) AS river_name
+        FROM PUBLICSIGNS WHERE PUBLICSIGNS_ID = #{publicsignsId}
+    </select>
+    
+    <!-- 根据code、regionId分页查询详细数据列表 -->
+    <select id="findPublicsignsByPage" resultType="map" parameterType="map">
+		SELECT  *,PUBLICSIGNS_ID as id,
+        (SELECT region_name FROM region WHERE region.region_id=PUBLICSIGNS.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=PUBLICSIGNS.river_id) AS river_name
+        FROM PUBLICSIGNS WHERE 1=1
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        LIMIT ${curPage},${pageNumber}
+    </select>
+    
+    <!-- 获取分页查询详情 count总数 page总页数-->
+    <select id="getPagingInformation" resultType="map" parameterType="map">
+		SELECT COUNT(*) AS count,CEILING(COUNT(*)/${pageNumber}) AS page FROM PUBLICSIGNS WHERE 1=1
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+	</select>
+	
+    <select id="findMaxId" resultType="int" parameterType="int">
+        SELECT IFNULL(max(PUBLICSIGNS_ID),0) from PUBLICSIGNS
+    </select>
+    
+    <!-- 查询对应的河流名称 -->
+    <select id="getRiverName" resultType="map" parameterType="int">
+		SELECT river_name,river_id FROM river WHERE river_id = (SELECT river_id FROM publicsigns WHERE publicsigns_id = #{id})
+	</select> 
+    
+    <!-- 插入数据 -->
+    <insert id="insertPublicsigns" parameterType="map">
+        INSERT INTO PUBLICSIGNS (<include refid="allColumns" />)
+        VALUES (
+            #{id},
+            #{publicsigns_code},
+            #{name},
+            #{region_id},
+            #{river_id},
+            #{longitute},
+            #{latitude},
+            #{river_start},
+            #{river_end},
+            #{river_length},
+            #{qu_riverchief},
+            #{qu_telphone},
+            #{zhen_riverchief},
+            #{zhen_telphone},
+            #{cun_riverchief},
+            #{cun_telphone},
+            #{department},
+            #{rivermanager},
+            #{manager_telphone},
+            #{duty},
+            #{rivermanager_duty},
+            #{shi_hotline},
+            #{xian_hotline},
+            #{target},
+            #{qrcode},
+            #{imgurl},
+            #{base_info_type}
+        )
+    </insert>
+    
+   <!-- 修改数据 -->
+    <update id="updatePublicsigns" parameterType="map">
+        UPDATE PUBLICSIGNS SET
+            #{publicsigns_code},
+            #{name},
+            #{region_id},
+            #{river_id},
+            #{longitute},
+            #{latitude},
+            #{river_start},
+            #{river_end},
+            #{river_length},
+            #{qu_riverchief},
+            #{qu_telphone},
+            #{zhen_riverchief},
+            #{zhen_telphone},
+            #{cun_riverchief},
+            #{cun_telphone},
+            #{department},
+            #{rivermanager},
+            #{manager_telphone},
+            #{duty},
+            #{rivermanager_duty},
+            #{shi_hotline},
+            #{xian_hotline},
+            #{target},
+            #{qrcode},
+            #{imgurl},
+            #{base_info_type}
+        WHERE PUBLICSIGNS_ID = #{id}
+    </update>
+    
+    <!-- 根据主键删除数据 -->
+    <delete id="deletePublicsignsById" parameterType="int">
+        DELETE FROM PUBLICSIGNS WHERE PUBLICSIGNS_ID = #{id}
+    </delete>
+    
+</mapper>

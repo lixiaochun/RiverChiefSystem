@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="websocket.mapper.UserRTPMapper">
+    <select id="IsUserPositionExist" resultType = "common.model.UserRTP">
+    SELECT a.user_id AS "userId",a.longitude AS "longitude",a.latitude AS "latitude",a.create_time AS "createTime" FROM user_rtp a 
+    WHERE a.user_id = #{userId}
+    </select>
+    <insert id="insertUserPosition">
+    INSERT INTO user_rtp
+    (
+     user_id,
+     longitude,
+     latitude,
+     create_time
+    )VALUES(
+     #{userId},
+     #{longitude},
+     #{latitude},
+     now()
+    )
+    </insert>
+    <update id="updateUserPosition">
+    UPDATE user_rtp SET
+    longitude = #{longitude},
+    latitude = #{latitude},
+    create_time = now()
+    WHERE user_id = #{userId}
+    </update>
+    
+    <delete id="deleteUserPosition">
+    DElETE FROM user_rtp WHERE user_id = #{userId}
+    </delete>
+    
+    <select id="findUserRTPList" resultType = "common.model.UserRTP">
+    SELECT a.user_id AS "userId",a.longitude AS "longitude",a.latitude AS "latitude",a.create_time AS "createTime" FROM user_rtp a 
+    </select>
+    
+</mapper>

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- POLLUTANTSOURCE -->
+<mapper namespace="onemap.mapper.PollutantSourceMapper">
+    
+    <!-- 表所有字段 -->
+    <sql id="allColumns">
+        POLLUTANT_SOURCE_ID, POLLUTANT_SOURCE_NAME, BASE_INFO_TYPE, REGION_ID, RIVER_ID, FOCUS_LEVEL, 
+        ACCESS, MONITOR, LONGITUTE, LATITUDE, PORT, REMARK, 
+        WARNING
+    </sql>
+    
+    <!-- 根据code、regionId、riverId查询点坐标数据 -->
+    <select id="findPollutantSourceAll" resultType="map" parameterType="map">
+        SELECT
+        POLLUTANT_SOURCE_ID  as id,LONGITUTE as x, LATITUDE as y,warning as warn
+        FROM POLLUTANT_SOURCE WHERE 1=1
+        <if test="code != null and code != 0">
+            AND BASE_INFO_TYPE LIKE CONCAT( #{code},'%')
+        </if>
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        <if test="riverId != null and riverId != ''">
+            AND RIVER_ID LIKE CONCAT( #{riverId},'%')
+        </if>
+    </select>
+    
+	<!-- 根据id查询详细数据 -->
+    <select id="findPollutantSourceById" resultType="map" parameterType="int">
+        SELECT  *,CONCAT( LONGITUTE,',',LATITUDE) as point,
+        (SELECT region_name FROM region WHERE region.region_id=POLLUTANT_SOURCE.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=POLLUTANT_SOURCE.river_id) AS river_name,
+		(SELECT value FROM base_info_type WHERE base_info_type.code=POLLUTANT_SOURCE.base_info_type) AS type_name
+        FROM POLLUTANT_SOURCE WHERE POLLUTANT_SOURCE_ID = #{pollutantSourceId}
+    </select>
+    
+    <!-- 根据code、regionId分页查询详细数据列表 -->
+    <select id="findPollutantSourceByPage" resultType="map" parameterType="map">
+        SELECT  *,POLLUTANT_SOURCE_ID as id,
+        (SELECT region_name FROM region WHERE region.region_id=POLLUTANT_SOURCE.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=POLLUTANT_SOURCE.river_id) AS river_name,
+		(SELECT value FROM base_info_type WHERE base_info_type.code=POLLUTANT_SOURCE.base_info_type) AS type_name
+        FROM POLLUTANT_SOURCE WHERE 1=1
+        <if test="code != null and code != 0">
+            AND BASE_INFO_TYPE LIKE CONCAT( #{code},'%')
+        </if>
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        LIMIT ${curPage},${pageNumber}
+    </select>
+    
+<!-- 获取分页查询详情 count总数 page总页数-->
+    <select id="getPagingInformation" resultType="map" parameterType="map">
+		SELECT COUNT(*) AS count,CEILING(COUNT(*)/${pageNumber}) AS page FROM POLLUTANT_SOURCE WHERE 1=1
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+	</select>
+    
+    <select id="findMaxId" resultType="int" parameterType="int">
+        SELECT  IFNULL(max(POLLUTANT_SOURCE_ID),0) from POLLUTANT_SOURCE
+    </select>
+
+	<!-- 插入数据 -->
+    <insert id="insertPollutantSource" parameterType="map">
+        INSERT INTO POLLUTANT_SOURCE (<include refid="allColumns" />)
+        VALUES (
+            #{id},
+            #{pollutantSourceName},
+            #{baseInfoType},
+            #{regionId},
+            #{riverId},
+            #{focusLevel},
+            #{access},
+            #{monitor},
+            #{longitute},
+            #{latitude},
+            #{port},
+            #{remark},
+            #{warning}
+        )
+    </insert>
+    
+    <!-- 修改数据 -->
+    <update id="updatePollutantSource" parameterType="map">
+        UPDATE POLLUTANT_SOURCE SET
+            POLLUTANT_SOURCE_NAME = #{pollutantSourceName},
+            BASE_INFO_TYPE = #{baseInfoType},
+            REGION_ID = #{regionId},
+            RIVER_ID = #{riverId},
+            FOCUS_LEVEL = #{focusLevel},
+            ACCESS = #{access},
+            MONITOR = #{monitor},
+            LONGITUTE = #{longitute},
+            LATITUDE = #{latitude},
+            PORT = #{port},
+            REMARK = #{remark},
+            WARNING = #{warning}
+        WHERE POLLUTANT_SOURCE_ID = #{id}
+    </update>
+    
+    <!-- 根据主键删除数据 -->
+    <delete id="deletePollutantSourceById" parameterType="int">
+        DELETE FROM POLLUTANT_SOURCE WHERE POLLUTANT_SOURCE_ID = #{pollutantSourceId}
+    </delete>
+    
+</mapper>

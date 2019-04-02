@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="assessment.mapper.AssessmentMapper">
+    <resultMap id="BaseResultMap" type="common.model.Assessment">
+        <id column="assess_id" property="assessId" jdbcType="INTEGER"/>
+        <result column="river_id" property="riverId" jdbcType="VARCHAR"/>
+        <result column="submit_time" property="submitTime" jdbcType="TIMESTAMP"/>
+        <result column="year" property="year" jdbcType="INTEGER"/>
+        <result column="month" property="month" jdbcType="INTEGER"/>
+        <result column="organizational_score" property="organizationalScore" jdbcType="DOUBLE"/>
+        <result column="water_environment_score" property="waterEnvironmentScore" jdbcType="DOUBLE"/>
+        <result column="strategy_score" property="strategyScore" jdbcType="DOUBLE"/>
+        <result column="complaint_score" property="complaintScore" jdbcType="DOUBLE"/>
+        <result column="publicity_score" property="publicityScore" jdbcType="DOUBLE"/>
+        <result column="additional_score" property="additionalScore" jdbcType="DOUBLE"/>
+        <result column="detail_array" property="detailArray" jdbcType="VARCHAR"/>
+        <result column="assess_user_id" property="assessUserId" jdbcType="INTEGER"/>
+        <result column="region_id" property="regionId" jdbcType="VARCHAR"/>
+        <result column="owner_id" property="ownerId" jdbcType="INTEGER"/>
+    </resultMap>
+    <resultMap id="AvgResultMap" type="common.model.Assessment">
+        <result column="avg(organizational_score)" property="organizationalScore" jdbcType="DOUBLE"/>
+        <result column="avg(water_environment_score)" property="waterEnvironmentScore" jdbcType="DOUBLE"/>
+        <result column="avg(strategy_score)" property="strategyScore" jdbcType="DOUBLE"/>
+        <result column="avg(complaint_score)" property="complaintScore" jdbcType="DOUBLE"/>
+        <result column="avg(publicity_score)" property="publicityScore" jdbcType="DOUBLE"/>
+        <result column="avg(additional_score)" property="additionalScore" jdbcType="DOUBLE"/>
+        <result column="river_id" property="riverId" jdbcType="VARCHAR"/>
+        <result column="region_id" property="regionId" jdbcType="VARCHAR"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        assess_id, river_id, submit_time, year, month, organizational_score,
+        water_environment_score, strategy_score, complaint_score, publicity_score, additional_score,
+        detail_array, assess_user_id,region_id,owner_id
+    </sql>
+    <select id="selectExistByRiverId" resultMap="BaseResultMap">
+        select * from assessment_new
+        <where>
+            <if test="riverId != null and riverId !=''">
+                river_id = #{riverId}
+            </if>
+            <if test="regionId !=null and regionId != ''">
+                and region_id =#{regionId}
+            </if>
+            and year =#{year} and month=#{month}
+        </where>
+    </select>
+    <select id="avgByRiverInSeason" resultMap="AvgResultMap">
+        select
+        avg(organizational_score),avg(water_environment_score),avg(strategy_score),avg(complaint_score),avg(publicity_score),avg(additional_score),river_id,region_id,owner_id
+        from assessment_new
+        <where>
+            <if test="riverId != null and riverId !=''">
+                river_id = #{riverId}
+            </if>
+            <if test="regionId !=null and regionId != ''">
+                and region_id =#{regionId}
+            </if>
+            <if test="season == 1">
+                and year =#{year} and month in (1,2,3)
+            </if>
+            <if test="season == 2">
+                and year =#{year} and month in (4,5,6)
+            </if>
+            <if test="season == 3">
+                and year =#{year} and month in (7,8,9)
+            </if>
+            <if test="season == 4">
+                and year =#{year} and month in (10,11,12)
+            </if>
+        </where>
+    </select>
+    <select id="avgByRiverInYear" resultMap="AvgResultMap">
+        select
+        avg(organizational_score),avg(water_environment_score),avg(strategy_score),avg(complaint_score),avg(publicity_score),avg(additional_score),river_id,region_id,owner_id
+        from assessment_new
+        <where>
+            <if test="riverId != null and riverId !=''">
+                river_id = #{riverId}
+            </if>
+            <if test="regionId !=null and regionId != ''">
+                and region_id =#{regionId}
+            </if>
+            and year =#{year}
+        </where>
+    </select>
+    <select id="avgByRiverListInMonth" resultMap="AvgResultMap">
+        select
+        avg(organizational_score),avg(water_environment_score),avg(strategy_score),avg(complaint_score),avg(publicity_score),avg(additional_score),region_id
+        from assessment_new
+        <where>
+            year =#{year} and month=#{month} AND  region_id  IN
+            <foreach collection="regionList" item="list" open="(" separator="," close=")">
+            #{list}
+            </foreach>
+        </where>
+        GROUP BY region_id;
+    </select>
+    <select id="avgByRiverListInYear" resultMap="AvgResultMap">
+        select
+        avg(organizational_score),avg(water_environment_score),avg(strategy_score),avg(complaint_score),avg(publicity_score),avg(additional_score),region_id
+        from assessment_new
+        <where>
+            year =#{year}
+            AND  region_id  IN
+            <foreach collection="regionList" item="list" open="(" separator="," close=")">
+                #{list}
+            </foreach>
+        </where>
+        GROUP BY region_id;
+    </select>
+    <select id="avgByRiverListInSeason" resultMap="AvgResultMap">
+        select
+        avg(organizational_score),avg(water_environment_score),avg(strategy_score),avg(complaint_score),avg(publicity_score),avg(additional_score),region_id
+        from assessment_new
+        <where>
+            <if test="season == 1">
+                and year =#{year} and month in (1,2,3)
+            </if>
+            <if test="season == 2">
+                and year =#{year} and month in (4,5,6)
+            </if>
+            <if test="season == 3">
+                and year =#{year} and month in (7,8,9)
+            </if>
+            <if test="season == 4">
+                and year =#{year} and month in (10,11,12)
+            </if>
+            AND  region_id  IN
+            <foreach collection="regionList" item="list" open="(" separator="," close=")">
+                #{list}
+            </foreach>
+        </where>
+        GROUP BY region_id;
+    </select>
+
+    <insert id="insert" parameterType="common.model.Assessment">
+        insert into assessment_new (assess_id, river_id, submit_time, year,
+        month, organizational_score, water_environment_score,
+        strategy_score, complaint_score, publicity_score,
+        additional_score, detail_array, assess_user_id,region_id,owner_id
+        )
+        values (#{assessId,jdbcType=INTEGER}, #{riverId,jdbcType=VARCHAR}, #{submitTime,jdbcType=TIMESTAMP},
+        #{year,jdbcType=VARCHAR},
+        #{month,jdbcType=VARCHAR}, #{organizationalScore,jdbcType=DOUBLE}, #{waterEnvironmentScore,jdbcType=DOUBLE},
+        #{strategyScore,jdbcType=DOUBLE}, #{complaintScore,jdbcType=DOUBLE}, #{publicityScore,jdbcType=DOUBLE},
+        #{additionalScore,jdbcType=DOUBLE}, #{detailArray,jdbcType=VARCHAR},
+        #{assessUserId,jdbcType=INTEGER},#{regionId,jdbcType=VARCHAR},#{ownerId,jdbcType=INTEGER}
+        )
+    </insert>
+    <update id="updateByPrimaryKey" parameterType="common.model.Assessment">
+        update assessment_new
+        set river_id = #{riverId,jdbcType=VARCHAR},
+        submit_time = #{submitTime,jdbcType=TIMESTAMP},
+        year = #{year,jdbcType=VARCHAR},
+        month = #{month,jdbcType=VARCHAR},
+        organizational_score = #{organizationalScore,jdbcType=DOUBLE},
+        water_environment_score = #{waterEnvironmentScore,jdbcType=DOUBLE},
+        strategy_score = #{strategyScore,jdbcType=DOUBLE},
+        complaint_score = #{complaintScore,jdbcType=DOUBLE},
+        publicity_score = #{publicityScore,jdbcType=DOUBLE},
+        additional_score = #{additionalScore,jdbcType=DOUBLE},
+        detail_array = #{detailArray,jdbcType=VARCHAR},
+        assess_user_id = #{assessUserId,jdbcType=INTEGER},
+        region_id = #{regionId,jdbcType=VARCHAR},
+        owner_id=#{ownerId,jdbcType=INTEGER}
+        where assess_id = #{assessId,jdbcType=INTEGER}
+    </update>
+
+    <delete id="deleteByPrimaryKey">
+        DELETE FROM assessment_new WHERE
+        assess_id=#{pkid};
+    </delete>
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+        SELECT * FROM assessment_new where assess_id=#{pkid};
+    </select>
+</mapper>

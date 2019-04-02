@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="filemanage.mapper.DirectoryMapper" >
+  <resultMap id="BaseResultMap" type="common.model.Directory" >
+    <id column="directory_id" property="directoryId" jdbcType="VARCHAR" />
+    <result column="name" property="name" jdbcType="VARCHAR" />
+    <result column="letter" property="letter" jdbcType="VARCHAR" />
+    <result column="time" property="time" jdbcType="TIMESTAMP" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    directory_id, name, letter, time
+  </sql>
+    <select id="selectAllWithBeginer" resultMap="BaseResultMap" parameterType="java.lang.String">
+        select * from directory
+        <where>
+            <if test="directoryId !=null and directoryId !=''">
+                directory_id LIKE '${directoryId}%';
+            </if>
+        </where>
+    </select>
+    <select id="sortAndCount" resultType="java.lang.Integer" parameterType="java.lang.String">
+        SELECT count(directory_id) from directory where directory_id LIKE '${directoryId}%';
+    </select>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.String" >
+    select 
+    <include refid="Base_Column_List" />
+    from directory
+    where directory_id = #{directoryId,jdbcType=VARCHAR}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.String" >
+    delete from directory
+    where directory_id = #{directoryId,jdbcType=VARCHAR}
+  </delete>
+  <insert id="insert" parameterType="common.model.Directory" >
+    insert into directory (directory_id, name, letter, 
+      time)
+    values (#{directoryId,jdbcType=VARCHAR}, #{name,jdbcType=VARCHAR}, #{letter,jdbcType=VARCHAR}, 
+      #{time,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="common.model.Directory" >
+    insert into directory
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="directoryId != null" >
+        directory_id,
+      </if>
+      <if test="name != null" >
+        name,
+      </if>
+      <if test="letter != null" >
+        letter,
+      </if>
+      <if test="time != null" >
+        time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="directoryId != null" >
+        #{directoryId,jdbcType=VARCHAR},
+      </if>
+      <if test="name != null" >
+        #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="letter != null" >
+        #{letter,jdbcType=VARCHAR},
+      </if>
+      <if test="time != null" >
+        #{time,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="common.model.Directory" >
+    update directory
+    <set >
+      <if test="name != null" >
+        name = #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="letter != null" >
+        letter = #{letter,jdbcType=VARCHAR},
+      </if>
+      <if test="time != null" >
+        time = #{time,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where directory_id = #{directoryId,jdbcType=VARCHAR}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="common.model.Directory" >
+    update directory
+    set name = #{name,jdbcType=VARCHAR},
+      letter = #{letter,jdbcType=VARCHAR},
+      time = #{time,jdbcType=TIMESTAMP}
+    where directory_id = #{directoryId,jdbcType=VARCHAR}
+  </update>
+</mapper>

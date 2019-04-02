@@ -1,0 +1,483 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace命名空间，作用就是对sql进行分类化管理，理解sql隔离
+注意：使用mapper代理方法开发，namespace有特殊重要的作用
+ -->
+<mapper namespace="usermanage.mapper.UserMapper">
+	
+	<resultMap type="common.model.User" id="user">
+	 	<id column="user_id" property="userId" />
+        <result column="user_name" property="userName" />
+        <result column="password" property="password" />
+        <result column="real_name" property="realName" />
+        <result column="create_time" property="createTime" />
+        <result column="modified_time" property="modifiedTime" />
+        <result column="last_time" property="lastTime" />
+        <result column="email" property="email" />
+        <result column="phone" property="phone" />
+        <result column="region_id" property="regionId" />
+        <result column="region_name" property="regionName" />
+        <result column="orgion_organization" property="orgionOrganization" />
+        <result column="orgion_role" property="orgionRole" />
+        <result column="token" property="token" />
+        <result column="organization_id" property="organizationId" />
+        <result column="organization_name" property="organizationName" />
+        <result column="role_id" property="roleId" />
+        <result column="role_name" property="roleName" />
+        <result column="role_short_name" property="roleShortName" />
+        <result column="role_type" property="roleType" />
+        <result column="status" property="status" />
+        <result column="remark" property="remark" />
+        <association property="region" resultMap="usermanage.mapper.DateInfoMapper.region"/>
+        <collection property="riverList" ofType="common.model.River">
+          	<id column="river_id" property="riverId" />
+        	<result column="river_name" property="riverName" />
+        	<result column="river_level" property="riverLevel" />
+        	<result column="parent_id" property="parentId" />
+       		<result column="f_id" property="fId" />
+        	<result column="region_id" property="regionId" />
+        	<result column="user_id" property="userId" />
+        	<result column="remark" property="remark" />
+    	</collection>
+    	
+    </resultMap>
+    
+     <resultMap type="common.model.User" id="usercom">
+	 	<id column="user_id" property="userId" />
+        <result column="user_name" property="userName" />
+        <result column="password" property="password" />
+        <result column="real_name" property="realName" />
+        <result column="create_time" property="createTime" />
+        <result column="modified_time" property="modifiedTime" />
+        <result column="last_time" property="lastTime" />
+        <result column="email" property="email" />
+        <result column="phone" property="phone" />
+        <result column="region_id" property="regionId" />
+        <result column="region_name" property="regionName" />
+        <result column="orgion_organization" property="orgionOrganization" />
+        <result column="orgion_role" property="orgionRole" />
+        <result column="token" property="token" />
+        <result column="organization_id" property="organizationId" />
+        <result column="organization_name" property="organizationName" />
+        <result column="role_id" property="roleId" />
+        <result column="role_name" property="roleName" />
+        <result column="role_type" property="roleType" />
+        <result column="status" property="status" />
+        <result column="remark" property="remark" />
+    </resultMap>
+    
+		<!-- 登录 -->
+	<select id="findUserByNameAndPassword" resultMap="user" parameterType="java.util.Map">
+		select u.*,o.organization_name,re.region_name ,re.region_id as region_id,
+		CONCAT(re.region_name,r.role_name) as role_name ,r.role_name as role_short_name,r.role_type
+		from  user u left join organization o on u.organization_id=o.organization_id left join role r on u.role_id = r.role_id
+		left join region re on u.region_id = re.region_id LEFT JOIN river ri ON u.user_id = ri.user_id
+		where u.user_name=#{userName,jdbcType = VARCHAR} and u.password=#{password,jdbcType = VARCHAR}
+		and u.status=1
+	</select>
+	
+	<!-- 更新token -->
+	<update id="updateToken" parameterType="java.util.Map">
+		UPDATE user
+		<trim prefix="set" suffixOverrides=",">
+  		<if test="token!=null">token = #{token, jdbcType = VARCHAR},</if>
+		<if test="lastTime!=null">last_time = #{lastTime},</if>
+		</trim>
+		WHERE user_id = #{userId, jdbcType = INTEGER}
+	</update>
+
+	<!-- 更新token -->
+	<select id="checkToken" parameterType="int" resultType="java.lang.String">
+		SELECT token
+		FROM user
+		WHERE user_id = #{userId, jdbcType = INTEGER}
+	</select>
+	
+	<!-- 查询user列表 -->
+	<select id="queryUserList" resultMap="user" parameterType="java.util.Map">
+		select u.*,o.organization_name,re.region_name ,re.region_id,
+		CONCAT(re.region_name,r.role_name) as role_name,ri.* ,re.*
+		from USER u 
+		LEFT JOIN organization o ON u.organization_id = o.organization_id
+		LEFT JOIN region re ON u.region_id = re.region_id
+		LEFT JOIN role r ON u.role_id = r.role_id
+		LEFT JOIN river ri ON u.user_id = ri.user_id
+		<where>
+		<if test="userId!=null">
+			and u.user_id=#{userId}
+		</if>
+		<if test="password!=null">
+			and u.password=#{password}
+		</if>
+		<if test="organizationId!=null">
+			and u.organization_id=#{organizationId}
+		</if>
+		<if test="riverId!=null">
+			and ri.river_id=#{riverId}
+		</if>
+		<if test="regionId!=null">
+			and u.region_id=#{regionId}
+		</if>
+		<if test="roleType!=null">
+				<if test="roleType==5">
+				and r.role_id=#{roleType}
+			</if>
+			<if test="roleType!=5">
+				and r.role_id !=5
+			</if>
+		</if>
+		<if test="regionIds!=null">
+    		and u.region_id LIKE 
+			CONCAT((SELECT (
+			CASE WHEN r.level=0 THEN LEFT(region_id,0) 
+			WHEN r.level=1 THEN LEFT(region_id,2)
+			WHEN r.level=2 THEN LEFT(region_id,4)
+			WHEN r.level=3 THEN LEFT(region_id,6)
+			WHEN r.level=4 THEN LEFT(region_id,9)
+			WHEN r.level=5 THEN region_id
+			END)AS region_id
+			FROM region r WHERE region_id LIKE #{regionIds}),'%')
+    	</if>
+		and u.status=1
+		</where>
+		<if test="min!=null and pageSize!=null">
+ 			LIMIT #{min},#{pageSize}
+ 		</if>
+	</select>
+	
+	<select id="countUser" resultType="java.lang.Integer" parameterType="java.util.Map">
+		select count(*) from USER u 
+			LEFT JOIN organization o ON u.organization_id = o.organization_id
+		LEFT JOIN region re ON u.region_id = re.region_id
+		LEFT JOIN role r ON u.role_id = r.role_id
+		LEFT JOIN river ri ON u.user_id = ri.user_id
+		<where>
+		<if test="userId!=null">
+			and u.user_id=#{userId}
+		</if>
+		<if test="password!=null">
+			and u.password=#{password}
+		</if>
+		<if test="organizationId!=null">
+			and u.organization_id=#{organizationId}
+		</if>
+		<if test="riverId!=null">
+			and ri.river_id=#{riverId}
+		</if>
+		<if test="regionId!=null">
+			and u.region_id=#{regionId}
+		</if>
+		<if test="roleType!=null">
+			<if test="roleType==5">
+				and r.role_id=#{roleType}
+			</if>
+			<if test="roleType!=5">
+				and r.role_id !=5
+			</if>
+		</if>
+		<if test="regionIds!=null">
+    		and u.region_id LIKE 
+			CONCAT((SELECT (
+			CASE WHEN r.level=0 THEN LEFT(region_id,0) 
+			WHEN r.level=1 THEN LEFT(region_id,2)
+			WHEN r.level=2 THEN LEFT(region_id,4)
+			WHEN r.level=3 THEN LEFT(region_id,6)
+			WHEN r.level=4 THEN LEFT(region_id,9)
+			WHEN r.level=5 THEN region_id
+			END)AS region_id
+			FROM region r WHERE region_id LIKE #{regionIds}),'%')
+    	</if>
+		and u.status=1
+		</where>
+	</select>
+	
+	<!-- <select id="queryUserRole" resultMap="user" parameterType="java.util.Map">
+		select urr.*, from user u,organization o,role r,user_role_relation urr
+		<where>
+		<if test="regionId!=null">
+			and o.region_id=#{regionId}
+		</if>
+		<if test="roleType!=null">
+			and r.role_type = #{roleType}
+		</if>
+		and r.role_id = urr.role_id
+		and urr.status=1
+		and urr.user_id=u.user_id
+		</where>
+	</select> -->
+	
+	<!-- 更新user -->
+	<update id="updateUser" parameterType="java.util.Map">
+		UPDATE user
+		<trim prefix="set" suffixOverrides=",">
+  		<if test="organizationId!=null">organization_id = #{organizationId, jdbcType = INTEGER},</if>
+  		<if test="roleId!=null">role_id = #{roleId, jdbcType = INTEGER},</if>
+  		<if test="password!=null">password = #{password, jdbcType = VARCHAR},</if>
+  		<if test="realName!=null">real_name = #{realName, jdbcType = VARCHAR},</if>
+  		<if test="status!=null">status = #{status, jdbcType = INTEGER},</if>
+  		</trim>
+		WHERE user_id = #{userId, jdbcType = INTEGER}
+	</update>
+	
+	<select id="queryUserRoleId"  parameterType="java.util.Map" resultType="java.lang.Integer">
+		select u.user_id as userRoleId from organization o ,role r,user u
+		<!-- ,user_role_relation urr -->
+		<where>
+		<if test="regionId">
+		<!-- 泉州版 level 5 -->
+			and u.region_id = (select IF(level&lt;5,r.region_id,r.parent_id) from region r where region_id = #{regionId})
+		</if>
+		<if test="userId!=null">
+			<!-- and urr.user_id = #{userId} -->
+			and u.user_id = #{userId}
+		</if>
+		<if test="roleId!=null">
+			<!-- and urr.role_id = #{roleId} -->
+			and u.role_id=#{roleId}
+		</if>
+		and u.role_id=r.role_id
+		and o.organization_id = u.organization_id
+		and r.status=1
+		</where>
+	</select>
+	
+		<select id="queryUserByRoleType" resultMap="usercom" parameterType="java.util.Map">
+		select DISTINCT u.*, r.role_name,re.region_name from user u LEFT JOIN organization o on u.organization_id = o.organization_id 
+		left join role r on u.role_id = r.role_id left join region re on re.region_id = u.region_id
+		<if test="type==0">
+			left join river ri on u.user_id = ri.user_id
+		</if>
+		<where>
+			<!-- 河道专管员 -->
+			<if test="type==0">
+				and r.role_type=50
+				<if test="riverId!=null">
+					and ri.river_id=#{riverId}
+				</if>
+			</if>
+		<!-- 请求上级 -->
+		<if test="type==1">
+			<!-- 河道专管员 -->
+			<if test="rolehead==5">
+				and LEFT(r.role_type,1) = (#{rolehead}-1)
+				and o.organization_id = #{organizationId}
+			</if>
+			<if test="rolehead==4">
+			<!-- 河长办请求上级-> 主任、副主任、上级河长办等情况 -->
+				and (LEFT(r.role_type,1) = (#{rolehead}-1)
+				and o.organization_id = #{organizationId})
+				or (o.organization_id in (
+				select o.organization_id from organization o LEFT JOIN region r on o.region_id = r.parent_id where 
+ 				r.region_id in (select region_id from organization where organization_id = #{organizationId})
+				) and LEFT(r.role_type,1) = 4)
+			</if>
+			<!-- 主任、副主任、河长 -->
+			<if test="rolehead&lt;=3">
+				and (LEFT(r.role_type,1) = (#{rolehead}-1)
+				and o.organization_id = #{organizationId})
+				or (LEFT(r.role_type,1) = #{rolehead} and LEFT(r.role_type,1) &lt; #{roletail} and  o.organization_id = #{organizationId})
+			</if>
+		</if>
+		</where>
+	</select>
+	
+	<select id="countUserByRoleType" resultType="java.lang.Integer" parameterType="java.util.Map">
+		select count(distinct u.user_id) from  user u ,river ri, role r
+		<where>
+		<if test="roleType!=null">
+			<if test="roleType==2">
+			and r.role_type in (2,3)
+				<if test="riverIds!=null">
+					and ri.river_id in
+					<foreach collection="riverIds" item="item"  open="(" close=")" index="index" separator=",">  
+                 		 #{item}  
+             		</foreach>  
+				</if>
+			</if>
+			<if test="roleType!=2">
+			and r.role_type=#{roleType}
+				<if test="riverId!=null">
+					and ri.river_id=#{riverId}
+				</if>
+			</if>
+		</if>
+		and u.role_id = r.role_id
+		and u.user_id = ri.user_id
+		</where>
+	</select>
+	
+	<insert id="insertUser" parameterType="java.util.List">
+    	<selectKey resultType="java.lang.Integer" keyProperty="id" order="AFTER">
+			SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO user(user_id ,user_name , password ,
+		token , role_id , region_id , organization_id ,real_name,create_time,modified_time,
+		last_time,email,phone,orgion_organization,orgion_role,status,remark )
+		values
+		<foreach collection="list" item="user" index="index" separator=",">
+		(
+			#{user.userId, jdbcType = INTEGER},
+			#{user.userName, jdbcType = VARCHAR},
+			#{user.password, jdbcType = VARCHAR},
+			#{user.token, jdbcType = VARCHAR},
+			#{user.roleId, jdbcType = INTEGER},
+			#{user.regionId, jdbcType = VARCHAR},
+			#{user.organizationId, jdbcType = INTEGER},
+			#{user.realName, jdbcType = VARCHAR},
+			#{user.createTime, jdbcType = TIMESTAMP},
+			#{user.modifiedTime, jdbcType = TIMESTAMP},
+			#{user.lastTime, jdbcType = TIMESTAMP},
+			#{user.email, jdbcType = VARCHAR},
+			#{user.phone, jdbcType = VARCHAR},
+			#{user.orgionOrganization, jdbcType = VARCHAR},
+			#{user.orgionRole, jdbcType = VARCHAR},
+			#{user.status, jdbcType = INTEGER},
+			#{user.remark, jdbcType = VARCHAR}
+		)
+		</foreach>
+    </insert>
+    
+    <update id="updateUserList" parameterType="java.util.List">
+    	<foreach collection="list" item="user" index="index" separator=";">  
+                update user   
+                <set>  
+                user_name = #{user.userName, jdbcType = VARCHAR},
+                password =#{user.password, jdbcType = VARCHAR},
+				token =#{user.token, jdbcType = VARCHAR},
+				role_id = #{user.roleId, jdbcType = INTEGER},
+				region_id =#{user.regionId, jdbcType = VARCHAR},
+				organization_id =#{user.organizationId, jdbcType = INTEGER},
+				real_name =#{user.realName, jdbcType = VARCHAR},
+				create_time =#{user.createTime, jdbcType = TIMESTAMP},
+				modified_time =#{user.modifiedTime, jdbcType = TIMESTAMP},
+				last_time =#{user.lastTime, jdbcType = TIMESTAMP},
+				email =#{user.email, jdbcType = VARCHAR},
+				phone =#{user.phone, jdbcType = VARCHAR},
+				orgion_organization =#{user.orgionOrganization, jdbcType = VARCHAR},
+				orgion_role =#{user.orgionRole, jdbcType = VARCHAR},
+				status =#{user.status, jdbcType = INTEGER},
+				remark = #{user.remark, jdbcType = VARCHAR}
+                </set>  
+                where user_id = #{user.userId, jdbcType = INTEGER}
+         </foreach>  
+    </update>
+    
+    <!--                   edit by liweiqin      start              -->
+    <select id="findUserByName" resultType="common.model.User" parameterType="java.lang.String">
+		SELECT  
+			u.user_id AS "userId",u.user_name AS "userName",u.password AS "password",u.real_Name AS "realName",
+			urr.role_id AS "roleId",r.role_name AS "roleName",o.organization_name AS "organizationName"
+		FROM user u 
+		LEFT JOIN user_role_relation urr ON u.user_id =urr.user_id
+		LEFT JOIN role r ON r.role_id = urr.role_id
+		LEFT JOIN organization o ON u.organization_id=o.organization_id
+		where u.user_name = #{0}
+		and u.status=1
+	</select>
+    
+    <select id="findRoleInfo" resultType="common.model.RoleAuthority">
+		SELECT 
+		       c.role_name AS "name",e.permission AS "permission"
+		FROM user a
+		LEFT JOIN user_role_relation b ON b.user_id = a.user_id
+		LEFT JOIN role c ON c.role_id = b.role_id 
+		LEFT JOIN role_permissions_relation d ON d.role_id = c.role_id
+		LEFT JOIN permissions e ON e.permissions_id = d.permissions_id
+		<where>
+			 a.user_name =  #{userName}
+		</where>
+	 </select>
+	
+	<select id="findOldPasswordList" resultType="common.model.UserOldPassword">
+    SELECT 
+    	a.id AS "id",a.user_id AS "userId",a.old_password AS "oldPassword",a.create_time AS "createTime" 
+    FROM user_hi_password a
+    WHERE a.user_id = #{userId} 
+    ORDER BY a.create_time DESC
+    </select>
+    <insert id="insertHisPassword">
+    INSERT INTO user_hi_password 
+    (
+     user_id,
+     old_password,
+     create_time
+    )
+    VALUES
+    (
+    #{userId},
+    #{newPassword},
+    now()
+    )
+    </insert>
+    <delete id="deleteHisPaFIFO">
+    DELETE FROM user_hi_password
+    WHERE id = #{id}
+    </delete>
+    
+    
+    
+    <insert id="register">
+    INSERT INTO user(
+    user_name,
+    password,
+    role_id,
+    region_id,
+    organization_id,
+    real_name,
+    create_time,
+    email,
+    phone,
+    status)
+    VALUES(
+    #{userName},
+    #{password},
+    5,
+    #{regionId},
+    #{organizationId},
+    #{realName},
+    now(),
+    #{email},
+    #{phone},
+    1
+    )
+    </insert>
+    
+    <select id="showSelectedOne" resultType = "common.model.User">
+    SELECT 
+		u.user_id AS "userId",user_name AS "userName",u.region_id AS "regionId",
+		u.organization_id AS "organizationId",u.real_name AS "realName",u.email,u.phone,
+		o.organization_name AS "organizationName",r.region_name AS "regionName"
+	FROM `user` AS u
+	LEFT JOIN organization o ON o.organization_id = u.organization_id
+	LEFT JOIN region r ON r.region_id = u.region_id
+	WHERE u.user_id = #{userId} AND u.`status` = 1
+    </select>
+    
+    <update id="userModify">
+    UPDATE user SET
+    real_name = #{realName},
+    region_id = #{regionId},
+    organization_id = #{organizationId},
+    email = #{email},
+    <if test="password != null and password != ''">
+	password = #{password},
+	</if>
+    phone = #{phone}
+    WHERE user_id = #{userId} AND `status` = 1
+    </update>
+    
+    
+    <delete id="deleteRoleRelation">
+    DELETE FROM user_role_relation
+    WHERE user_id = #{userIdS}
+    </delete>
+    
+    <delete id="userDelete">
+    DELETE FROM user
+    WHERE user_id = #{userIdS}
+    </delete>
+    <!--                   edit by liweiqin      end              -->
+</mapper>

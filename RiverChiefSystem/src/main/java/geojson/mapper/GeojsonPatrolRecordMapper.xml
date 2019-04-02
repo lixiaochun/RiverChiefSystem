@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="geojson.mapper.GeojsonPatrolRecordMapper">
+
+    <!-- 查询所有数据 -->
+    <select id="selectPatrolRecord" resultType="map" parameterType="map">
+		SELECT patrol_record_id as id,year(submit_time) as 'year' ,month(submit_time) as 'month',day(submit_time),point FROM patrol_record 
+		WHERE month(submit_time) BETWEEN #{minMonth} AND #{maxMonth} AND 
+		day(submit_time) BETWEEN #{minDay} AND #{maxDay} AND point is not null
+    </select>
+    
+</mapper>
+

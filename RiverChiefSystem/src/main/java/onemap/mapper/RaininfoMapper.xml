@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- RAININFO -->
+<mapper namespace="onemap.mapper.RaininfoMapper">
+    
+    <!-- 表所有字段 -->
+    <sql id="allColumns">
+        RAININFO_ID, LONGITUTE, LATITUDE, NAME, HEAVY, REGION_ID, 
+        RIVER_ID, WARNING, LEVEL
+    </sql>
+    
+    <!-- 根据code、regionId、riverId查询点坐标数据 -->
+    <select id="findRaininfoAll" resultType="map" parameterType="map">
+        SELECT
+        RAININFO_ID as id, LONGITUTE as x, LATITUDE as y,warning as warn
+        FROM RAININFO WHERE 1=1
+        <if test="code !=null and code != 0">
+            AND LEVEL LIKE CONCAT( #{code},'%')
+        </if>
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        <if test="riverId != null and riverId != ''">
+            AND RIVER_ID LIKE CONCAT( #{riverId},'%')
+        </if>
+    </select>
+    
+	<!-- 根据id查询详细数据 -->
+    <select id="findRaininfoById" resultType="map" parameterType="int">
+		SELECT  *,CONCAT( LONGITUTE,',',LATITUDE) as point,
+        (SELECT region_name FROM region WHERE region.region_id=RAININFO.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=RAININFO.river_id) AS river_name,
+		(SELECT value FROM base_info_type WHERE base_info_type.code=RAININFO.`level`) AS type_name
+        FROM RAININFO WHERE RAININFO_ID = #{raininfoId}
+    </select>
+    
+    <!-- 根据code、regionId分页查询详细数据列表 -->
+    <select id="findRaininfoByPage" resultType="map" parameterType="map">
+		SELECT  *,RAININFO_ID as id,
+        (SELECT region_name FROM region WHERE region.region_id=RAININFO.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=RAININFO.river_id) AS river_name,
+		(SELECT value FROM base_info_type WHERE base_info_type.code=RAININFO.`level`) AS type_name
+        FROM RAININFO WHERE 1=1
+        <if test="code !=null and code != 0">
+            AND LEVEL LIKE CONCAT( #{code},'%')
+        </if>
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        LIMIT ${curPage},${pageNumber}
+    </select>
+    
+    <!-- 获取分页查询详情 count总数 page总页数-->
+    <select id="getPagingInformation" resultType="map" parameterType="map">
+		SELECT COUNT(*) AS count,CEILING(COUNT(*)/${pageNumber}) AS page FROM RAININFO WHERE 1=1
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+	</select>
+	
+    <select id="findMaxId" resultType="int" parameterType="int">
+        SELECT  IFNULL(max(RAININFO_ID),0) from RAININFO
+    </select>
+     
+    <!-- 插入数据 -->
+    <insert id="insertRaininfo" parameterType="map">
+        INSERT INTO RAININFO (<include refid="allColumns" />)
+        VALUES (
+            #{id},
+            #{longitute},
+            #{latitude},
+            #{name},
+            #{heavy},
+            #{regionId},
+            #{riverId},
+            #{warning},
+            #{level}
+        )
+    </insert>
+    
+    <!-- 修改数据 -->
+    <update id="updateRaininfo" parameterType="map">
+        UPDATE RAININFO SET
+            LONGITUTE = #{longitute},
+            LATITUDE = #{latitude},
+            NAME = #{name},
+            HEAVY = #{heavy},
+            REGION_ID = #{regionId},
+            RIVER_ID = #{riverId},
+            WARNING = #{warning},
+            LEVEL = #{level}
+        WHERE RAININFO_ID = #{id}
+    </update>
+    
+    <!-- 根据主键删除数据 -->
+    <delete id="deleteRaininfoById" parameterType="int">
+        DELETE FROM RAININFO WHERE RAININFO_ID = #{raininfoId}
+    </delete>
+    
+</mapper>

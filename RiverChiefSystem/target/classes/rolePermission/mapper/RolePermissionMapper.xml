@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="rolePermission.mapper.RolePermissionMapper">
+   <!-- 角色信息列表查询 start -->
+    <select id="queryRoleList" resultType = "common.model.RoleInfo">
+    SELECT 
+    a.role_id AS "roleId",
+    a.role_name AS "roleName",
+    a.role_desc AS "roleDesc"
+    FROM role a 
+    </select>
+    <select id="queryUserOfRole" resultType = "common.model.UserBasisInfo">
+    SELECT
+    a.user_id AS "userId",
+    a.real_name AS "realName"
+    FROM user a
+    RIGHT JOIN user_role_relation b ON b.user_id = a.user_id
+    WHERE b.role_id = #{roleId}
+    ORDER BY a.user_id
+    </select>
+    <!-- 角色信息列表查询 end  -->
+    
+    <!-- 视图维护 start -->
+    <select id="queryViewPermissionByRoleId" resultType = "common.model.PermissionIno">
+    SELECT 
+    a.permissions_id AS "permissionId",
+    a.permission AS "permission",
+    a.permissions_name AS "permissionName",
+    a.menu_id AS "menuId",
+    a.status AS "status"
+    FROM permissions a
+    RIGHT JOIN role_permissions_relation b ON b.permissions_id = a.permissions_id
+    WHERE b.role_id = #{roleId} AND a.menu_id = 1
+     ORDER BY a.status
+    </select>
+    
+    <select id="queryViewPermissionOfAll" resultType = "common.model.PermissionIno">
+    SELECT 
+    a.permissions_id AS "permissionId",
+    a.permission AS "permission",
+    a.permissions_name AS "permissionName",
+    a.menu_id AS "menuId",
+    a.status AS "status"
+    FROM permissions a
+    WHERE  a.menu_id = 1 
+    </select>
+    
+    <delete id="deleteOldRelation">
+    DELETE FROM role_permissions_relation 
+    WHERE role_id = #{roleId}
+    </delete>
+    
+    <insert id="insertNewRelation">
+    INSERT INTO role_permissions_relation(
+    role_id,
+    permissions_id,
+    status
+    )
+    VALUES
+    <foreach collection="list" item="item" separator=",">
+	(
+	#{roleId},
+	#{item},
+	'1'
+	)
+	</foreach>
+    </insert>
+    
+    <select id="querySecondMenu" resultType = "java.lang.String">
+    SELECT 
+    a.permissions_id 
+    FROM permissions a
+    WHERE a.status IN 
+    <foreach item="item" index="index" collection="list"  open="(" separator="," close=")"> #{item}</foreach>      
+    </select>
+    
+    <insert id="insertNewSecondRelation">
+    INSERT INTO role_permissions_relation(
+    role_id,
+    permissions_id,
+    status
+    )
+    VALUES
+    <foreach collection="list" item="item" separator=",">
+	(
+	#{roleId},
+	#{item},
+	'2'
+	)
+	</foreach>
+    </insert>
+    <!-- 试图维护 end -->
+    <!-- 权限维护 start -->
+    <select id="querySecondMenuPermissionOfAll" resultType = "common.model.PermissionIno">
+    SELECT 
+    a.permissions_id AS "permissionId",
+    a.permission AS "permission",
+    a.permissions_name AS "permissionName",
+    a.menu_id AS "menuId",
+    a.status AS "status"
+    FROM permissions a
+    WHERE  a.menu_id = 2 
+    </select>
+    <select id="querySecondMenuPermissionByRoleId" resultType = "common.model.PermissionIno">
+    SELECT 
+    a.permissions_id AS "permissionId",
+    a.permission AS "permission",
+    a.permissions_name AS "permissionName",
+    a.menu_id AS "menuId",
+    a.status AS "status"
+    FROM permissions a
+    RIGHT JOIN role_permissions_relation b ON b.permissions_id = a.permissions_id
+    WHERE b.role_id = #{roleId} AND a.menu_id = 2
+    ORDER BY a.status
+    </select>
+    <delete id="deleteOldSecondRelation">
+     DELETE FROM role_permissions_relation 
+     WHERE role_id = #{roleId} AND status = 2
+    </delete>
+    <!-- 权限维护 end -->
+    
+    <!-- 成员维护 start -->
+    <select id="queryTreeOfOrganization" resultType = "common.model.Organization">
+    SELECT 
+    a.organization_id AS "organizationId",
+    a.organization_code AS "organizationCode",
+    a.organization_name AS "organizationName",
+    a.organization_type AS "organizationType",
+    a.region_id AS "regionId",
+    a.level AS "level",
+    a.parent_id AS "parentId"
+    FROM organization a
+    ORDER BY a.organization_id
+    </select>
+    
+    <select id="queryUserInRelationOutGpoup" resultType = "common.model.UserBasisInfo">
+    SELECT 
+    a.real_name AS "realName", 
+    a.user_id  AS "userId"
+    FROM user a
+	RIGHT JOIN (SELECT * FROM user_role_relation b WHERE b.user_id NOT IN(SELECT user_id FROM user_role_relation c WHERE  c.role_id = #{roleId}))  d ON d.user_id = a.user_id
+	<if test="organizationId !=null and organizationId !=0">
+	WHERE a.organization_id = #{organizationId}
+	ORDER BY a.user_id
+	</if>
+    </select>
+    <select id="queryUserNotRole"  resultType = "common.model.UserBasisInfo">
+    SELECT 
+	a.user_id AS "userId",
+	a.real_name AS "realName"
+	FROM user a
+	WHERE NOT EXISTS 
+	(SELECT * FROM user_role_relation b WHERE b.user_id = a.user_id) 
+	<if test="organizationId !=null and organizationId !=0">
+	AND a.organization_id = #{organizationId}
+	</if>
+	ORDER BY a.user_id
+    </select>
+    
+    <delete id="deleteOldUserRoleRelation">
+    DELETE FROM user_role_relation
+    WHERE role_id = #{roleId}
+    </delete>
+    
+    <insert id="insertNewUserRoleRelation">
+    INSERT INTO user_role_relation(
+    user_id,
+    role_id,
+    status
+    )
+    VALUES
+    <foreach collection="list" item="item" separator=",">
+	(
+	#{item},
+	#{roleId},
+	'1'
+	)
+	</foreach>
+    </insert>
+    <!-- 成员维护 end -->
+    <!-- 维护分组 start -->
+    <select id="queryRoleInfoById" resultType= "common.model.RoleInfo">
+    SELECT 
+    a.role_id AS "roleId",
+    a.role_name AS "roleName",
+    a.role_desc AS "roleDesc"
+    FROM role a
+    WHERE a.role_id = #{roleId}
+    </select>
+    <update id="updateRoleInfo">
+    UPDATE role SET
+    role_name = #{roleName},
+    role_desc = #{roleDesc}
+    WHERE role_id = #{roleId}
+    </update>
+    <!-- 维护分组 end -->
+    <!-- 删除分组  start -->
+    <delete id="deleteUserRelationBeforeRole">
+    DELETE FROM user_role_relation 
+    WHERE role_id = #{roleId}
+    </delete>
+    <delete id="deletePermissionRelationBeforeRole">
+    DELETE FROM role_permissions_relation
+    WHERE role_id = #{roleId}
+    </delete>
+    <delete id="deleteRole">
+    DELETE FROM role
+    WHERE role_id = #{roleId}
+    </delete>
+    <!-- 删除分组  end -->
+    <!-- 新增分组 start -->
+    <insert id="createRoleInfo">
+    INSERT INTO role 
+	(  role_name,
+	   role_desc,
+	   status,
+	   role_type
+	)
+	VALUES 
+	(
+	   #{roleName},
+	   #{roleDesc},
+	   '1',
+	   '0'
+	)
+    </insert>
+    <!-- 新增分组 end -->
+</mapper>

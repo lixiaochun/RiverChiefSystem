@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="assessmentNanPing.mapper.EvaluationMapper">
+    <select id="queryUserPatrolDays" resultType = "java.lang.Integer">
+    SELECT count(*) FROM (
+	SELECT DATE_FORMAT(a.submit_time,'%Y-%m-%d') AS oneday FROM patrol_record a WHERE a.user_id =#{userId} AND a.record_status =1
+	GROUP BY oneday
+	) b WHERE  
+	b.oneday  like #{dateStr}
+    </select>
+    <select id="queryUserPatrolTime" resultType = "java.lang.Integer">
+    SELECT 
+	count(*)
+	FROM patrol_record a
+	WHERE a.user_id = #{userId} AND a.record_status=1 AND a.submit_time like #{dateStr}
+    </select>
+    <select id="queryUserPatrolMileage" resultType = "java.lang.Double">
+    SELECT 
+	IFNULL(SUM(cast(a.total_mileage as DECIMAL(10,2))),'0') AS sum_mileage
+	FROM patrol_record a
+	WHERE a.user_id = #{userId} AND a.record_status=1 AND a.submit_time like #{dateStr}
+    </select>
+    <select id="queryUserEventNum" resultType = "java.lang.Integer">
+    SELECT COUNT(*) FROM event a 
+	WHERE a.user_id = #{userId} 
+	AND a.event_status =1 
+	AND a.event_time  like #{dateStr}
+    </select>
+    
+    <select id="queryUserPieChart" resultType = "common.model.EvaluationPieCharts">
+    SELECT a.user_score AS "userScore",a.detail_data AS "detailData",b.type,b.ratio,b.min,b.max,b.reserve FROM evaluation_user_score a
+	LEFT JOIN evaluation_criteria b ON a.evaluation_id = b.id
+	WHERE a.user_id = #{userId} AND b.`year_month` LIKE #{dateStr}
+	ORDER BY b.type
+    </select>
+    
+    <select id="queryUserRank" resultType = "common.model.UserRank">
+    SELECT a.user_id AS "userId",u.real_name  AS "realName",SUM(a.user_score) AS "totalScore",r.region_name AS "regionName" 
+	FROM evaluation_user_score a
+	LEFT JOIN evaluation_criteria b ON a.evaluation_id = b.id
+	LEFT JOIN user u ON u.user_id = a.user_id
+	LEFT JOIN region r ON r.region_id =u.region_id
+	WHERE b.`year_month` LIKE #{dateStr}
+	GROUP BY a.user_id
+	ORDER BY totalScore DESC
+    </select>
+    
+    <select id="queryCurrentCriteria" resultType = "common.model.EvaluationCriteria">
+    SELECT
+    a.id, 
+	a.type,
+	a.ratio,
+	a.min,
+	a.max,
+	a.score,
+	a.`year_month` AS "yearMonth",
+	a.reserve
+	FROM evaluation_criteria a 
+	WHERE a.`year_month` = #{currentDay}
+    </select>
+    
+    <update id="updateCurrentCriteria">
+    INSERT INTO evaluation_criteria(id,type,ratio,min,max,score,`year_month`,reserve) 
+    VALUES
+    <foreach collection="list" item="item" separator=",">
+    (#{item.id},#{item.type},#{item.ratio},#{item.min},#{item.max},#{item.score},#{item.yearMonth},#{item.reserve}) 
+    </foreach>
+    ON DUPLICATE KEY UPDATE
+    id = VALUES(id),
+	type = VALUES(type),
+	ratio = VALUES(ratio),
+	min = VALUES(min),
+	max = VALUES(max),
+	score = VALUES(score),
+	`year_month` = VALUES(`year_month`),
+	reserve= VALUES(reserve)
+    </update>
+</mapper>

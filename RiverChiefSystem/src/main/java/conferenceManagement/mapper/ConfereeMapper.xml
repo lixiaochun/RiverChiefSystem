@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="conferenceManagement.mapper.ConfereeMapper">
+	<resultMap type="common.model.Conferee" id="conferee">
+		<id column="conferee_id" property="confereeId" />
+		<result column="conference_id" property="conferenceId" />
+		<result column="user_id" property="userId" />
+		<result column="conferee_Name" property="confereeName" />
+		<result column="contact_info" property="contactInfo" />
+		<result column="company" property="company" />
+		<result column="duty" property="duty" />
+		<result column="status" property="status" />
+	</resultMap>
+
+	<!-- 查询参会人员 -->
+	<select id="queryConferee" parameterType="java.util.Map" resultMap="conferee">
+		select con.*,u.real_name as conferee_Name,u.phone as contact_info,o.organization_name as company,role.role_name as duty
+		from conferee con
+		left join `user` u on con.user_id=u.user_id left join organization o on u.organization_id=o.organization_id left join role role on u.role_id=role.role_id
+		<where>
+		<if test="confereeId!=null">
+			and conferee_id=#{confereeId}
+		</if>
+		<if test="conferenceId!=null">
+			and conference_id=#{conferenceId}
+		</if>
+		<if test="userId!=null">
+			and con.user_id=#{userId}
+		</if>
+		<if test="confereeName!=null and confereeName!='' and confereeName!='undefined'.toString()">
+			and u.real_name like '%${confereeName}%'
+		</if>
+		<if test="contactInfo!=null and contactInfo!='' and contactInfo!='undefined'.toString()">
+			and u.phone like '%${contactInfo}%'
+		</if>
+		<if test="company!=null and company!='' and company!='undefined'.toString()">
+			and o.organization_name like '%${company}%'
+		</if>
+		<if test="duty!=null and duty!='' and duty!='undefined'.toString()">
+			and role.role_name like '%${duty}%'
+		</if>
+			and con.status!=0
+		</where>	
+		<if test="min!=null and pageSize!=null">
+			LIMIT #{min},#{pageSize}
+		</if>
+	</select>
+	
+	<select id="countConferee" resultType="java.lang.Integer" parameterType="java.util.Map">
+		select count(*) 
+		from conferee con
+		left join `user` u on con.user_id=u.user_id left join organization o on u.organization_id=o.organization_id left join role role on u.role_id=role.role_id
+		<where>
+		<if test="confereeId!=null">
+			and conferee_id=#{confereeId}
+		</if>
+		<if test="conferenceId!=null">
+			and conference_id=#{conferenceId}
+		</if>
+		<if test="userId!=null">
+			and con.user_id=#{userId}
+		</if>
+		<if test="confereeName!=null and confereeName!='' and confereeName!='undefined'.toString()">
+			and u.real_name like '%${confereeName}%'
+		</if>
+		<if test="contactInfo!=null and contactInfo!='' and contactInfo!='undefined'.toString()">
+			and u.phone like '%${contactInfo}%'
+		</if>
+		<if test="company!=null and company!='' and company!='undefined'.toString()">
+			and o.organization_name like '%${company}%'
+		</if>
+		<if test="duty!=null and duty!='' and duty!='undefined'.toString()">
+			and role.role_name like '%${duty}%'
+		</if>
+			and con.status!=0
+		</where>	
+	</select>
+	
+	<!-- 增加参会人员 -->
+	<insert id="insertConferee" parameterType="common.model.Conferee" useGeneratedKeys="true" keyProperty="confereeId">
+    	INSERT INTO conferee(conference_id,user_id,status)
+		VALUES (
+			#{conferenceId, jdbcType = INTEGER},
+			#{userId, jdbcType =INTEGER},
+			#{status, jdbcType = INTEGER}
+		);		
+    </insert>
+    
+    <!-- 把草稿箱的东西改成完成 -->
+    <update id="updateConferee" parameterType="java.util.Map">
+    	update conferee set status=#{status} WHERE conferee_id= #{confereeId}    
+    </update>
+
+	<!-- 删除参会人员 -->
+    <update id="deleteConferee" parameterType="java.util.Map">
+    	update conferee set status=0
+    	<where>
+    		<if test="confereeId!=null">
+    			and conferee_id= #{confereeId}
+    		</if>
+    		<if test="userId!=null">
+				and user_id=#{userId}
+			</if>
+			<if test="conferenceId!=null">
+			and conference_id=#{conferenceId}
+		</if>
+    	</where>   
+    </update>
+
+</mapper>

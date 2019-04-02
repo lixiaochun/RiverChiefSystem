@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="filemanage.mapper.BriefingTempleMapper">
+    <resultMap id="BaseResultMap" type="common.model.BriefingTemple">
+        <id column="briefing_id" property="briefingId" jdbcType="INTEGER"/>
+        <result column="briefing_name" property="briefingName" jdbcType="VARCHAR"/>
+        <result column="briefing_title" property="briefingTitle" jdbcType="VARCHAR"/>
+        <result column="briefing_summary" property="briefingSummary" jdbcType="VARCHAR"/>
+        <result column="region_id" property="regionId" jdbcType="VARCHAR"/>
+        <result column="submit_time" property="submitTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    <resultMap id="ResultMapWithBLOBs" type="common.model.BriefingTemple" extends="BaseResultMap">
+        <result column="briefing_body" property="briefingBody" jdbcType="LONGVARCHAR"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        briefing_id, briefing_name, briefing_title, briefing_summary, region_id, submit_time
+    </sql>
+    <sql id="Blob_Column_List">
+        briefing_body
+    </sql>
+    <select id="selectTitleByRegion" resultMap="BaseResultMap">
+        SELECT
+            briefing_id,
+            briefing_name,
+            briefing_title,
+            briefing_summary
+        FROM briefing_temple
+        WHERE region_id LIKE '${regionId}%'
+        ORDER BY submit_time DESC
+    </select>
+    <select id="selectByPrimaryKey" resultMap="ResultMapWithBLOBs" parameterType="java.lang.Integer">
+        select
+        <include refid="Base_Column_List"/>
+        ,
+        <include refid="Blob_Column_List"/>
+        from briefing_temple
+        where briefing_id = #{briefingId,jdbcType=INTEGER}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+        DELETE FROM briefing_temple
+        WHERE briefing_id = #{briefingId,jdbcType=INTEGER}
+    </delete>
+    <insert id="insert" parameterType="common.model.BriefingTemple">
+        INSERT INTO briefing_temple (briefing_id, briefing_name, briefing_title, briefing_summary,
+                                     region_id, submit_time, briefing_body
+        )
+        VALUES (#{briefingId,jdbcType=INTEGER}, #{briefingName,jdbcType=INTEGER}, #{briefingTitle,jdbcType=VARCHAR},
+                #{briefingSummary,jdbcType=VARCHAR},
+                #{regionId,jdbcType=VARCHAR}, #{submitTime,jdbcType=TIMESTAMP}, #{briefingBody,jdbcType=LONGVARCHAR}
+        )
+    </insert>
+    <update id="updateByPrimaryKeyWithBLOBs" parameterType="common.model.BriefingTemple">
+        UPDATE briefing_temple
+        SET briefing_title   = #{briefingTitle,jdbcType=VARCHAR},
+            briefing_name    = #{briefingName,jdbcType=INTEGER},
+            briefing_summary = #{briefingSummary,jdbcType=VARCHAR},
+            region_id        = #{regionId,jdbcType=VARCHAR},
+            submit_time      = #{submitTime,jdbcType=TIMESTAMP},
+            briefing_body    = #{briefingBody,jdbcType=LONGVARCHAR}
+        WHERE briefing_id = #{briefingId,jdbcType=INTEGER}
+    </update>
+</mapper>

@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="quartzJob.mapper.EvaluationMonthlyMapper">
+		<insert id="insertPatrolDaysMonthly">
+		INSERT INTO evaluation_user_score
+		(
+		user_id,
+		user_score,
+		evaluation_id,
+		detail_data
+		)
+		(
+			SELECT c.userId,d.score,d.id,c.detail_data FROM (  
+			SELECT b.userId,count(*) AS "detail_data" FROM (
+			SELECT DATE_FORMAT(a.submit_time,'%Y-%m-%d') AS oneday,a.user_id AS "userId" FROM patrol_record a WHERE  a.record_status =1
+			GROUP BY oneday,userId
+			) AS b 
+			WHERE  b.oneday  LIKE #{lastMonthLike}
+			GROUP BY b.userId
+			)  AS c,evaluation_criteria AS d
+			WHERE (c.detail_data/d.reserve*100)&gt;d.min AND (IF(c.detail_data/d.reserve&gt;1,1,c.detail_data/d.reserve)*100)&lt;=d.max AND d.type =1 AND d.`year_month` = #{lastMonthFirst}
+		)
+		</insert>
+		
+		<insert id="insertPatrolTimeMonthly">
+		INSERT INTO evaluation_user_score
+		(
+		user_id,
+		user_score,
+		evaluation_id,
+		detail_data
+		)(
+			SELECT b.user_id,c.score,c.id,b.detail_data FROM
+			(
+			 SELECT a.user_id,COUNT(*) AS "detail_data"
+			 FROM patrol_record a WHERE a.record_status = 1 AND a.submit_time LIKE #{lastMonthLike}
+			 GROUP BY a.user_id
+			) AS b,evaluation_criteria AS c
+			WHERE b.detail_data &gt;= c.min AND b.detail_data&lt;c.max AND c.type =2 AND c.`year_month` = #{lastMonthFirst}
+		)
+		</insert>
+		
+		<insert id="insertEventNumMonthly">
+		INSERT INTO evaluation_user_score
+		(
+		user_id,
+		user_score,
+		evaluation_id,
+		detail_data
+		)(
+			SELECT b.user_id,c.score,c.id,b.detail_data FROM
+			(
+			  SELECT a.user_id,COUNT(*) AS "detail_data" FROM `event` a
+			  WHERE a.event_status = 1 AND a.event_time LIKE #{lastMonthLike}
+			  GROUP BY a.user_id
+			) AS b,evaluation_criteria AS c
+			WHERE b.detail_data &gt;= c.min AND b.detail_data &lt; c.max AND c.type = 4 AND c.`year_month` = #{lastMonthFirst}
+		)
+		</insert>
+		
+		<insert id="insertPatrolMileageLowerMonthly">
+		INSERT INTO evaluation_user_score
+		(
+		user_id,
+		user_score,
+		evaluation_id,
+		detail_data
+		)(
+			SELECT b.user_id,c.score,c.id,b.detail_data FROM
+			(
+			  SELECT a.user_id,SUM(cast(a.total_mileage AS DECIMAL(10, 2))) AS "detail_data"
+			  FROM patrol_record a 
+			  WHERE a.record_status = 1 AND a.submit_time LIKE #{lastMonthLike}
+			  GROUP BY a.user_id 
+			) AS b,evaluation_criteria AS c
+			WHERE b.detail_data&lt; c.min*1000 AND c.type =3 AND c.`year_month` = #{lastMonthFirst}  AND c.score = 0
+		)
+		</insert>
+		
+		<insert id="insertPatrolMileageNoZeroMonthly">
+		INSERT INTO evaluation_user_score
+		(
+		user_id,
+		user_score,
+		evaluation_id,
+		detail_data
+		)(
+			SELECT
+			c.user_id     as user_id,
+			d.score       as user_score,
+			d.id          as evaluation_id,
+			c.detail_data as detail_data
+			FROM (
+       			SELECT
+         			b.detail_data as detail_data,
+         			b.user_id  as user_id,
+         			(100 - b.rank / b.total * 100 +0) as percent
+      			 FROM (
+             		 SELECT
+                		detail_data,
+               			user_id,
+                		rank as rank,
+                (select count(*)
+                 from (select *
+                       from
+                         (
+                           SELECT
+                             sum(cast(total_mileage as DECIMAL(10, 2))) as detail_data,
+                             user_id
+                           FROM patrol_record
+                           where submit_time like "2018-03%" and record_status = 1 and user_id in (
+                             select user_id
+                             from user
+                             where role_id = 5)
+                           group by user_id
+                           ORDER BY detail_data DESC
+                         ) z
+                       where detail_data &gt; ((
+                                              select min
+                                              from evaluation_criteria
+                                              where type = 3 and score = 0 and `year_month` like #{lastMonthLike}
+                                            ) * 1000)) a) as total
+             			 FROM (
+                     		SELECT
+                      			 	*,
+                      				@rownum := @rownum + 1 AS tmp,
+                       				@incrnum := CASE
+                                   		WHEN @rowtotal = detail_data
+                                     	THEN @incrnum
+                                   		WHEN @rowtotal := detail_data
+                                     	THEN @rownum
+                                   		END AS rank
+                     		FROM
+                       			(select *
+                        			from
+                          		(
+                            		SELECT
+                              			sum(cast(total_mileage as DECIMAL(10, 2))) as detail_data,
+                              			user_id
+                            		FROM patrol_record
+                            		where submit_time like "2018-03%" and record_status = 1 and user_id in (
+                              			select user_id
+                              				from user
+                              			where role_id = 5)
+                            			group by user_id
+                            			ORDER BY detail_data DESC
+                          		) z
+                        		where detail_data &gt; ((
+                                               select min
+                                               from evaluation_criteria
+                                               where type = 3 and score = 0 and `year_month` like #{lastMonthLike}
+                                             ) * 1000)
+                       			) AS a, (
+                                 SELECT
+                                   @rownum := 0,
+                                   @rowtotal := NULL,
+                                   @incrnum := 0) b
+                   			) x
+           	 		) b
+     		) c, evaluation_criteria d
+     	WHERE c.percent &gt;= d.min AND c.percent &lt; d.max AND d.type = 3 AND d.`year_month` = #{lastMonthFirst}
+		)
+		</insert>
+		
+		<insert id="insertLastMonthCriteria">
+		INSERT INTO evaluation_criteria(
+		type,
+		ratio,
+		min,
+		max,
+		score,
+		`year_month`,
+		reserve)
+		(SELECT 
+		a.type,
+		a.ratio,
+		a.min,
+		a.max,
+		a.score,
+		#{currentMonthFirst},
+		a.reserve
+		FROM evaluation_criteria a 
+		WHERE a.`year_month` = #{lastMonthFirst}
+		)
+		</insert>
+</mapper>

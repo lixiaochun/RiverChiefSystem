@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="statisticalform.mapper.StatisticalWaterQualityMapper">
+    <resultMap id="Base" type="common.model.StatisticsWaterQuality">
+        <result column="quality_count" property="qualityCount"/>
+        <result column="river_count" property="riverCount"/>
+        <result column="type" property="type"/>
+
+    </resultMap>
+    <select id="countByType" resultMap="Base">
+        SELECT count(water_quality_id) as quality_count,base_info_type as type FROM water_quality WHERE region_id like
+        '${regionId}%' GROUP BY base_info_type;
+    </select>
+    <select id="countByRegion" resultType="java.lang.Integer">
+        SELECT count(water_quality_id) FROM water_quality WHERE base_info_type != '110' and region_id
+        ='${regionId}%';
+    </select>
+    <select id="countByWarn" resultType="java.lang.Integer">
+        SELECT count(water_quality_id) FROM water_quality where base_info_type != '110' and warning=0 and region_id
+        like '${regionId}%' ;
+    </select>
+
+    <select id="countPollSrcByType" resultType="java.lang.Integer">
+        SELECT count(pollutant_source_id) FROM pollutant_source where base_info_type=#{type} and region_id like
+        '${regionId}%';
+    </select>
+
+</mapper>

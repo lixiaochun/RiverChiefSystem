@@ -1,0 +1,64 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<ehcache name="shirocache">   
+<!-- shiro缓存 不然每次前端调用校验会反复调用Realm方法频繁与数据库交互影响系统性能 -->
+    <diskStore path="java.io.tmpdir"/>
+
+     <defaultCache 
+        maxElementsInMemory="2000"
+        eternal="true"
+        timeToIdleSeconds="120"
+        timeToLiveSeconds="120"
+        overflowToDisk="true"/>
+    
+    <cache name="userCache"
+           maxElementsInMemory="200"
+           eternal="false"
+           timeToIdleSeconds="3600"
+           overflowToDisk="false"
+           memoryStoreEvictionPolicy="LRU"
+     />
+
+    <cache name="passwordRetryCache"
+           maxElementsInMemory="2000"
+           eternal="false"
+           timeToIdleSeconds="300"
+           timeToLiveSeconds="0"
+           overflowToDisk="false">
+    </cache>
+
+    <cache name="authorizationCache"
+           maxElementsInMemory="2000"
+           eternal="false"
+           timeToIdleSeconds="1800"
+           timeToLiveSeconds="0"
+           overflowToDisk="false">
+    </cache>
+
+    <cache name="authenticationCache"
+           maxElementsInMemory="2000"
+           eternal="false"
+           timeToIdleSeconds="1800"
+           timeToLiveSeconds="0"
+           overflowToDisk="false">
+    </cache>
+
+    <cache name="shiro-activeSessionCache"
+           maxElementsInMemory="2000"
+           eternal="false"
+           timeToIdleSeconds="1800"
+           timeToLiveSeconds="0"
+           overflowToDisk="false">
+    </cache>
+    
+     <cache name="shiro_cache"
+    	   maxElementsInMemory="2000"
+           maxEntriesLocalHeap="2000"
+           eternal="false"
+           timeToIdleSeconds="0"
+           timeToLiveSeconds="0"
+           maxElementsOnDisk="0"
+           overflowToDisk="true"
+           memoryStoreEvictionPolicy="FIFO"
+           statistics="true">
+    </cache>
+</ehcache>

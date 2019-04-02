@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="assessment.mapper.GroupAssessMapper">
+    <sql id="groupAssessColumns">
+    t.id AS "id",
+    temp.group_name AS "groupName",
+    temp.type AS "type",
+    temp.create_time AS "createTime",
+    temp.due_time AS "dueTime"
+    </sql>
+	<select id="findAllList" resultType="common.model.GroupAssess">
+	SELECT <include refid="groupAssessColumns"/> FROM(
+	SELECT  a.id 
+	FROM group_info a
+	WHERE 1 = 1
+	    <if test="groupName != null and groupName != ''">
+				AND a.group_name LIKE  concat('%',#{groupName},'%')
+		</if>
+		<if test="createTime != null  and dueTime != null">
+		        AND a.create_time BETWEEN #{createTime} AND #{dueTime}
+		</if>
+		<if test="createTime != null  and dueTime == null ">
+		        AND a.create_time  &gt; #{createTime} 
+		</if>
+		<if test="createTime == null  and dueTime != null">
+		        AND a.create_time  &lt;  #{dueTime} 
+		</if>
+	ORDER BY a.id 
+	LIMIT #{min},#{pageSize}
+	) t LEFT JOIN  group_info temp  on temp.id = t.id 
+	</select>
+	
+	<select id="countList" resultType="java.lang.Integer">
+	SELECT  count(*)
+	FROM group_info a
+	WHERE 1 = 1
+	    <if test="groupName != null and groupName != ''">
+				AND a.group_name LIKE  concat('%',#{groupName},'%')
+		</if>
+		<if test="createTime != null  and dueTime != null">
+		        AND a.create_time BETWEEN #{createTime} AND #{dueTime}
+		</if>
+		<if test="createTime != null  and dueTime == null ">
+		        AND a.create_time  &gt; #{createTime} 
+		</if>
+		<if test="createTime == null  and dueTime != null">
+		        AND a.create_time  &lt;  #{dueTime} 
+		</if>
+	</select>
+	
+	<select id="fetchExcelId" resultType="common.model.GroupAssess">
+	SELECT  a.excel_id AS "excelId",
+	a.id AS "id",
+    a.group_name AS "groupName",
+    a.type AS "type",
+    a.create_time AS "createTime",
+    a.due_time AS "dueTime"
+	FROM group_info a
+	WHERE a.id = #{groupId}
+	</select>
+	
+	<select id="userScoreList" resultType="common.model.UserScore">
+	SELECT  a.id AS "id",a.user_id AS "userId",b.real_name AS "realName",a.user_score AS "userScore"
+	FROM group_assess a
+	LEFT JOIN user b ON  b.user_id = a.user_id
+	WHERE a.group_id = #{groupId}
+	ORDER BY a.user_score desc
+	</select>
+	
+	<select id="findOneUserScore" resultType="common.model.UserScoreOne">
+	SELECT id,
+	group_id AS "groupId",
+	user_id AS "userId",
+	score_rule_id AS "scoreRuleId",
+	user_score AS "userScore"
+	FROM  group_score 
+	WHERE group_id = #{0} AND user_id = #{1}
+	</select>
+
+	<insert id="insertGroupAssess" parameterType="common.model.GroupAssess">
+	INSERT INTO group_info 	(
+	group_name,
+	excel_id,
+	type,
+	create_time,
+	due_time
+	)VALUES(
+	#{groupName},
+	#{excelId},
+	#{type},
+	#{createTime},
+	#{dueTime}
+	)
+	</insert>
+	
+	<select id="findGroupAssessId" resultType="java.lang.Integer">
+	SELECT a.id FROM group_info a
+	WHERE group_name = #{groupName} 
+	AND excel_id = #{excelId}
+	AND type = #{type}
+	AND create_time = #{createTime}
+	AND due_time = #{dueTime}
+	</select>
+	
+	<insert id="insertGroupScore">
+	INSERT INTO group_assess (
+	group_id,
+	user_id,
+	user_score
+	)VALUES
+	 <foreach collection="list" item="item" separator=",">
+	(
+	#{item.groupId},
+	#{item.userId},
+	#{item.userScore}
+	)
+	</foreach>
+	</insert>
+	<insert id="insertGroupScoreOne">
+	INSERT INTO group_score (
+	group_id,
+	user_id,
+	user_score,
+	score_rule_id
+	)VALUES
+	 <foreach collection="list" item="item" separator=",">
+	(
+	#{item.groupId},
+	#{item.userId},
+	#{item.userScore},
+	#{item.scoreRuleId}
+	)
+	</foreach>
+	</insert>
+	
+	<update id="modifyGroupAssess">
+	UPDATE group_info SET
+	group_name = #{groupName},
+	type = #{type},
+	create_time = #{createTime},
+	due_time = #{dueTime}
+	WHERE id = #{id}
+	</update>
+	<update id="modifyUserOneScore">
+	UPDATE group_assess SET
+	user_score = #{userScore}
+	WHERE 
+	     user_id = #{userId} AND group_id =#{groupId}
+	</update>
+	
+	<update id="modifyUserOneScoreDetail">
+	UPDATE group_score SET
+	user_score = #{userScore}
+	WHERE 
+	     id = #{id}
+	</update>
+	
+	<!--START 用户放大镜 -->
+	<sql id="userColumn">
+	a.user_id AS "userId",
+	a.real_name AS "realName",
+	b.region_name AS "regionName"
+    </sql>
+	<select id="findUserList" resultType="common.model.User">
+	SELECT  <include refid="userColumn"/>
+	FROM user a
+	LEFT JOIN region b ON b.region_id = a.region_id
+	WHERE 1 = 1
+	    <if test="realName != null and realName != ''">
+				AND a.real_name LIKE  concat('%',#{realName},'%')
+		</if>
+		<if test="regionName != null  and regionName != ''">
+		       AND b.region_name LIKE  concat('%',#{regionName},'%')
+		</if>
+	ORDER BY a.region_id
+	LIMIT #{min},#{pageSize}
+	</select>
+	
+	<select id="countUserList" resultType="java.lang.Integer">
+	SELECT  count(*)
+	FROM user a
+	LEFT JOIN region b ON b.region_id = a.region_id
+	WHERE 1 = 1
+	     <if test="realName != null and realName != ''">
+				AND a.real_name LIKE  concat('%',#{realName},'%')
+		</if>
+		<if test="regionName != null  and regionName != ''">
+		       AND b.region_name LIKE  concat('%',#{regionName},'%')
+		</if>
+	</select>
+	<!--END 用户放大镜 -->
+	
+	<!-- 添加用户待评任务 -->
+	<insert id="addUserToBeAssess">
+	INSERT INTO group_user_to_assess (
+	group_id,
+	group_name,
+	user_id,
+	excel_id,
+	type,
+	create_time,
+	due_time
+	)VALUES
+	<foreach collection="list" item="item" separator=",">
+	(
+	#{item.id},
+	#{item.groupName},
+	#{item.userId},
+	#{item.excelId},
+	#{item.type},
+	#{item.createTime},
+	#{item.dueTime}
+	)
+	</foreach>
+	</insert>
+	<!-- ==========================app端=================================== -->
+	<select id="findToAssessList" resultType="common.model.GroupAssess">
+	SELECT 
+	a.id AS "toAssessId",
+	a.group_id AS "id",
+	a.group_name AS "groupName",
+	a.excel_id AS "excelId",
+	b.name AS "excelName",
+	a.type AS "type",
+	a.create_time AS "createTime",
+	a.due_time AS "dueTime",
+	a.user_id AS "userId"
+	FROM group_user_to_assess a
+	LEFT JOIN score_rule b ON b.excel_id = a.excel_id
+	WHERE a.user_id = #{userId} 
+	</select>
+	<select id="selectOneToAssess" resultType="common.model.GroupAssess">
+	SELECT 
+	a.id AS "toAssessId",
+	a.group_id AS "id",
+	a.group_name AS "groupName",
+	a.excel_id AS "excelId",
+	b.name AS "excelName",
+	a.type AS "type",
+	a.create_time AS "createTime",
+	a.due_time AS "dueTime",
+	a.user_id AS "userId"
+	FROM group_user_to_assess a
+	LEFT JOIN score_rule b ON b.excel_id = a.excel_id
+	WHERE a.id = #{id} 
+	</select>
+	<insert id="insertUserselfAssess">
+	INSERT INTO group_userself_assess (
+	group_id,
+	user_id,
+	user_score
+	)
+	VALUES	(
+	#{groupId},
+	#{userId},
+	#{userScore}
+	)
+	</insert>
+	<insert id="insertUserselfScore">
+	INSERT INTO group_userself_assess (
+	group_id,
+	user_id,
+	score_rule_id,
+	user_score
+	)
+	VALUES	
+	<foreach collection="list" item="item" separator=",">
+	(
+	#{item.groupId},
+	#{item.userId},
+	#{item.scoreRuleId},
+	#{item.userScore}
+	)
+	</foreach>
+	</insert>
+	<!-- AND u.region_id LIKE #{regionId} -->
+	<select id="findAssessRank" resultType="common.model.UserRank">
+	SELECT e.user_id AS "userId",e.excel_id AS "excelId",(e.user_score * 0.6 + f.user_score * 0.4) AS "totalScore",u.real_name AS "realName" 
+	FROM (
+	SELECT a.user_id ,a.user_score,b.excel_id,a.group_id 
+	FROM group_assess a LEFT JOIN group_info b ON b.id = a.group_id) e 
+	INNER JOIN (SELECT c.user_id,c.user_score,d.excel_id,c.group_id FROM group_userself_assess c LEFT JOIN group_info d ON d.id = c.group_id) f ON e.excel_id =f.excel_id AND e.user_id =f.user_id AND e.group_id = f.group_id
+	LEFT JOIN `user` u ON u.user_id = e.user_id 
+	LEFT JOIN user_role_relation urr ON urr.user_id = u.user_id
+	WHERE e.excel_id = #{excelId} AND urr.role_id = 5 
+	ORDER BY totalScore DESC
+	</select>
+	
+	<select id="findRegionRank" resultType="common.model.UserRank">
+	SELECT e.user_id AS "userId",e.excel_id AS "excelId",(e.user_score * 0.6 + f.user_score * 0.4) AS "totalScore",u.real_name AS "realName",r.region_name AS "regionName" 
+	FROM (
+	SELECT a.user_id ,a.user_score,b.excel_id,a.group_id 
+	FROM group_assess a LEFT JOIN group_info b ON b.id = a.group_id) e 
+	INNER JOIN (SELECT c.user_id,c.user_score,d.excel_id,c.group_id FROM group_userself_assess c LEFT JOIN group_info d ON d.id = c.group_id) f ON e.excel_id =f.excel_id AND e.user_id =f.user_id AND e.group_id = f.group_id
+	LEFT JOIN `user` u ON u.user_id = e.user_id 
+	LEFT JOIN region r ON r.region_id =u.region_id
+	LEFT JOIN user_role_relation urr ON urr.user_id = u.user_id
+	WHERE e.excel_id = #{excelId} AND urr.role_id = 5 AND u.region_id LIkE #{regionId}
+	ORDER BY totalScore DESC
+	</select>
+	
+</mapper>

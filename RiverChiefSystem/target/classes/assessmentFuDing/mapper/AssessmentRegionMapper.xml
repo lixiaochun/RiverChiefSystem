@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="assessmentFuDing.mapper.AssessmentRegionMapper">
+    <select id="queryMonthContrast" resultType="common.model.AssessRegionDateStencil">
+        <foreach item="date" index="index" collection="date" separator="UNION ALL">
+            SELECT c.days as PatrolDays ,e.times as PatrolTime,e.mileage as PatrolMileage ,g.eventNum as EventNum FROM
+            (SELECT count(*) AS days FROM
+            (
+            SELECT a.user_id,DATE_FORMAT(a.submit_time,'%Y-%m-%d') AS oneday
+            FROM patrol_record a
+            LEFT JOIN `user` u ON u.user_id = a.user_id
+            WHERE u.region_id like '${regionId}%' AND a.record_status =1
+            GROUP BY a.user_id,oneday
+            ) b
+            WHERE b.oneday like '${date}%'
+            ) c,
+            (
+            SELECT count(*) AS times,IFNULL(SUM(cast(d.total_mileage as DECIMAL(10,2))),'0') AS mileage
+            FROM patrol_record d
+            LEFT JOIN `user` u ON u.user_id = d.user_id
+            WHERE u.region_id like '${regionId}%' AND d.submit_time like '${date}%'
+            AND d.record_status=1
+            ) e,
+            (
+            SELECT COUNT(*) AS "eventNum"
+            FROM event f
+            LEFT JOIN `user` u ON u.user_id = f.user_id
+            WHERE u.region_id like '${regionId}%' AND f.event_status =1 AND f.event_time like '${date}%'
+            ) g
+        </foreach>
+    </select>
+
+
+    <select id="queryRegionContrastSUM"  resultType ="common.model.RegionPatrolInfo">
+    <foreach item="regionId" index="index" collection="list"   separator="UNION ALL" > 
+    SELECT * FROM
+	(SELECT count(*) AS "days" FROM 
+		(
+		SELECT a.user_id,DATE_FORMAT(a.submit_time,'%Y-%m-%d') AS oneday 
+	  	FROM patrol_record a
+		LEFT JOIN `user` u ON u.user_id = a.user_id
+	 	 WHERE u.region_id like #{regionId} AND a.record_status =1
+		GROUP BY a.user_id,oneday 
+		) b 
+		WHERE  b.oneday &gt;= #{startTime} AND b.oneday &lt; #{endTime}
+	) c,<!-- 区域巡河累计天数 -->
+	(	
+		SELECT count(*) AS "times",IFNULL(SUM(cast(d.total_mileage as DECIMAL(10,2))),'0') AS "mileage"
+		FROM patrol_record d
+		LEFT JOIN `user` u ON u.user_id = d.user_id
+		WHERE u.region_id like #{regionId} AND d.submit_time &gt;= #{startTime} AND d.submit_time &lt; #{endTime} AND d.record_status=1
+	) e,<!-- 区域巡河累计次数，区域徐鹤累计总理程 -->
+	(
+		SELECT COUNT(*) AS "eventNum"
+		FROM event f 
+		LEFT JOIN `user` u ON u.user_id = f.user_id
+		WHERE u.region_id like #{regionId} AND f.event_status =1 AND f.event_time &gt;= #{startTime} AND f.event_time &lt; #{endTime}
+	) g<!-- 区域巡河累计上报事件数-->
+    </foreach> 
+    </select>
+    
+    <select id="queryRegionName" resultType ="common.model.RegionPatrolInfo">
+    SELECT a.region_id AS "regionId",a.region_name  AS "regionName"
+    FROM region a
+    WHERE a.region_id IN <foreach item="item" index="index" collection="list"  open="(" separator="," close=")"> #{item}</foreach> 
+	ORDER BY field(a.region_id,<foreach item="item" index="index" collection="list" separator=","> #{item}</foreach>)
+    </select>
+    
+    <select id="queryRegionPeopleNum" resultType="java.lang.Integer">
+    <foreach item="regionId" index="index" collection="list"   separator="UNION ALL" > 
+    SELECT COUNT(*) FROM `user` a
+	WHERE a.region_id LIKE #{regionId}
+	</foreach>
+    </select>
+</mapper>

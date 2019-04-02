@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="workmanage.mapper.PatrolMapper">
+	
+	<resultMap type="common.model.Patrol" id="patrolByRecord">
+	 	<id column="patrol_id" property="patrolId" />
+        <result column="task_name" property="taskName" />
+        <result column="user_id" property="userId" />
+        <result column="region_id" property="regionId" />
+        <result column="river_id" property="riverId" />
+        <result column="path" property="path" />
+        <result column="patrol_num" property="patrolNum" />
+        <result column="patrol_period" property="patrolPeriod" />
+        <result column="patrol_period_name" property="patrolPeriodName" />
+        <result column="grade" property="grade" />
+        <result column="now_grade" property="nowGrade" />
+        <result column="point" property="point" />
+        <result column="opuser_id" property="opuserId" />
+        <result column="publish_time" property="publishTime" />
+        <result column="patrol_status" property="patrolStatus" />
+        <result column="patrol_type" property="patrolType" />
+        <result column="remark" property="remark" />
+        <result column="region_name" property="regionName" />
+        <result column="river_name" property="riverName"/>
+        <result column="user_name" property="userName"/>
+        <association property="completeNum" column="patrolPeriod=patrol_period,patrolId=patrol_id"  javaType="java.lang.Integer" 
+        select="workmanage.mapper.PatrolRecordMapper.countPatrolRecordByPatrolId"/>
+    </resultMap>
+    
+    <resultMap type="common.model.Patrol" id="patrol">
+	 	<id column="patrol_id" property="patrolId" />
+        <result column="task_name" property="taskName" />
+        <result column="user_id" property="userId" />
+        <result column="region_id" property="regionId" />
+        <result column="river_id" property="riverId" />
+        <result column="path" property="path" />
+        <result column="patrol_num" property="patrolNum" />
+        <result column="patrol_period" property="patrolPeriod" />
+        <result column="patrol_period_name" property="patrolPeriodName" />
+        <result column="grade" property="grade" />
+        <result column="now_grade" property="nowGrade" />
+        <result column="point" property="point" />
+        <result column="opuser_id" property="opuserId" />
+        <result column="publish_time" property="publishTime" />
+        <result column="patrol_status" property="patrolStatus" />
+        <result column="patrol_type" property="patrolType" />
+        <result column="remark" property="remark" />
+        <result column="region_name" property="regionName" />
+        <result column="river_name" property="riverName"/>
+        <result column="user_name" property="userName"/>
+    </resultMap>
+    
+    	<!-- 高级查询-任务 根据userId查任务以及下属任务 -->
+	<select id="queryPatrolByStatus" parameterType="java.lang.Integer" resultMap="patrol">
+		select p.*,u.real_name as user_name,ri.river_name as river_name
+		<!-- ,d.name as patrol_period_name -->
+		from patrol p
+		left join user u on p.user_id=u.user_id left join river ri on p.river_id=ri.river_id
+		<!-- left join dict d on d.code = p.patrol_period -->
+		<where>
+		<if test="regionIds!=null and regionIds!='' and regionIds!='undefined'.toString()">
+			and p.river_id in (select ri.river_id from river ri where ri.region_id in
+    			<foreach collection="regionIds" item="item"  open="(" close=")" index="index" separator=",">  
+    			#{item}
+				</foreach>
+				)
+		</if>
+		<if test="riverName!=null and riverName!='' and riverName!='undefined'.toString()">
+			and ri.river_name like '%${riverName}%'
+		</if>
+		<if test="taskName!=null and taskName!='' and taskName!='undefined'.toString()">
+			and p.task_name like '%${taskName}%'
+		</if>
+		<if test="userName!=null and userName!='' and userName!='undefined'.toString()">
+			and u.real_name=#{userName}
+		</if>
+		<if test="patrolType!=null">
+			and p.patrol_type=#{patrolType}
+		</if>
+		<if test="startPublishTime!=null">
+ 			and  p.publish_time &gt;= #{startPublishTime,jdbcType = TIMESTAMP}
+ 		</if>
+ 		<if test="endPublishTime!=null">
+ 			 and p.publish_time &lt;= #{endPublishTime,jdbcType = TIMESTAMP}
+ 		</if>
+ 		<if test="appType==1">
+ 			and p.user_id = #{userId}
+ 		</if>
+ 		<if test="appType==2">
+			<if test="type==0">
+    			<if test="regionId!=null and regionId!='' and regionId!='undefined'.toString()">
+    				and p.region_id LIKE 
+				CONCAT((SELECT (
+				CASE WHEN r.level=0 THEN LEFT(region_id,0) 
+				WHEN r.level=1 THEN LEFT(region_id,2)
+				WHEN r.level=2 THEN LEFT(region_id,4)
+				WHEN r.level=3 THEN LEFT(region_id,6)
+				WHEN r.level=4 THEN LEFT(region_id,9)
+				WHEN r.level=5 THEN region_id
+				END)AS region_id
+				FROM region r WHERE region_id LIKE #{regionId}),'%')
+    			</if>
+    			<if test="riverId!=null and riverId!='' and riverId!='undefined'.toString()">
+    				and p.river_id LIKE 
+				CONCAT((SELECT (
+				CASE WHEN r.river_level=0 THEN LEFT(river_id,2) 
+				WHEN r.river_level=1 THEN LEFT(river_id,4)
+				WHEN r.river_level=2 THEN LEFT(river_id,6)
+				WHEN r.river_level=3 THEN LEFT(river_id,8)
+				WHEN r.river_level=4 THEN LEFT(river_id,10)
+				WHEN r.river_level=5 THEN LEFT(river_id,12)
+				WHEN r.river_level=6 THEN river_id
+				END)AS river_id
+				FROM river r WHERE river_id LIKE #{riverId}),'%')
+    			</if>
+    		</if>
+ 		</if>
+			and p.patrol_status!=0
+			<!-- and d.field = 'patrol_period' -->
+		</where> 	
+		order by p.publish_time desc
+		<if test="min!=null and pageSize!=null">
+			LIMIT #{min},#{pageSize}
+		</if>
+	</select>
+	
+	 <sql id="selectdateType">
+    	<if test="p.patrol_period==1">
+    		<!-- 年 -->
+    		and YEAR(pr.submit_time)=YEAR(NOW())
+    	</if>
+    	<if test="p.patrol_period==2">
+    		<!-- 季度 -->
+    		and QUARTER(pr.submit_time)=QUARTER(now())
+    	</if>
+    	<if test="p.patrol_period==3">
+    		<!-- 月 -->
+    		and DATE_FORMAT( pr.submit_time, '%Y%m' ) = DATE_FORMAT( CURDATE( ) , '%Y%m' )
+    	</if>
+    	<if test="p.patrol_period==4">
+    		<!-- 周 -->
+    		and  YEARWEEK(date_format(pr.submit_time,'%Y-%m-%d')) = YEARWEEK(now())
+    	</if>
+    </sql>
+	
+    <!-- 高级查询-任务 根据userId查任务以及下属任务 -->
+	<select id="queryPatrol" parameterType="java.util.Map" resultMap="patrolByRecord">
+		select p.*,u.real_name as user_name,ri.river_name as river_name
+		from patrol p
+		left join user u on p.user_id=u.user_id left join river ri on p.river_id=ri.river_id
+		<where>
+		<if test="regionIds!=null and regionIds!='' and regionIds!='undefined'.toString()">
+			and p.river_id in (select ri.river_id from river ri where ri.region_id in
+    			<foreach collection="regionIds" item="item"  open="(" close=")" index="index" separator=",">  
+    			#{item}
+				</foreach>
+				)
+		</if>
+		<if test="riverName!=null and riverName!='' and riverName!='undefined'.toString()">
+			and ri.river_name like '%${riverName}%'
+		</if>
+		<if test="taskName!=null and taskName!='' and taskName!='undefined'.toString()">
+			and p.task_name like '%${taskName}%'
+		</if>
+		<if test="userName!=null and userName!='' and userName!='undefined'.toString()">
+			and u.real_name=#{userName}
+		</if>
+		<if test="patrolType!=null">
+			and p.patrol_type=#{patrolType}
+		</if>
+		<if test="startPublishTime!=null">
+ 			and  p.publish_time &gt;= #{startPublishTime,jdbcType = TIMESTAMP}
+ 		</if>
+ 		<if test="endPublishTime!=null">
+ 			 and p.publish_time &lt;= #{endPublishTime,jdbcType = TIMESTAMP}
+ 		</if>
+ 		<if test="appType==1">
+ 			and p.user_id = #{userId}
+ 		</if>
+ 		<if test="appType==2">
+			<if test="type==0">
+    			<if test="regionId!=null and regionId!='' and regionId!='undefined'.toString()">
+    				and p.region_id LIKE 
+				CONCAT((SELECT (
+				CASE WHEN r.level=0 THEN LEFT(region_id,0) 
+				WHEN r.level=1 THEN LEFT(region_id,2)
+				WHEN r.level=2 THEN LEFT(region_id,4)
+				WHEN r.level=3 THEN LEFT(region_id,6)
+				WHEN r.level=4 THEN LEFT(region_id,9)
+				WHEN r.level=5 THEN region_id
+				END)AS region_id
+				FROM region r WHERE region_id LIKE #{regionId}),'%')
+    			</if>
+    			<if test="riverId!=null and riverId!='' and riverId!='undefined'.toString()">
+    				and p.river_id LIKE 
+				CONCAT((SELECT (
+				CASE WHEN r.river_level=0 THEN LEFT(river_id,2) 
+				WHEN r.river_level=1 THEN LEFT(river_id,4)
+				WHEN r.river_level=2 THEN LEFT(river_id,6)
+				WHEN r.river_level=3 THEN LEFT(river_id,8)
+				WHEN r.river_level=4 THEN LEFT(river_id,10)
+				WHEN r.river_level=5 THEN LEFT(river_id,12)
+				WHEN r.river_level=6 THEN river_id
+				END)AS river_id
+				FROM river r WHERE river_id LIKE #{riverId}),'%')
+    			</if>
+    		</if>
+ 		</if>
+			and p.patrol_status!=0
+		</where> 	
+		order by p.publish_time desc
+		<if test="min!=null and pageSize!=null">
+			LIMIT #{min},#{pageSize}
+		</if>
+	</select>
+	
+	<!-- 增加-添加巡查任务 -->
+	<insert id="insertPatrol" parameterType="common.model.Patrol" useGeneratedKeys="true" keyProperty="patrolId">
+
+    	INSERT INTO patrol(task_name, user_id, region_id,river_id,patrol_period,grade,point,opuser_id,publish_time,patrol_status,patrol_type,patrol_num)
+		VALUES (
+			#{taskName, jdbcType = VARCHAR},
+			#{userId, jdbcType = INTEGER},
+			#{regionId, jdbcType = INTEGER},
+			#{riverId, jdbcType = VARCHAR},
+			#{patrolPeriod, jdbcType = VARCHAR},
+			#{grade, jdbcType = VARCHAR},
+			#{point, jdbcType = VARCHAR},
+			#{opuserId, jdbcType = INTEGER},
+			#{publishTime, jdbcType = TIMESTAMP},
+			#{patrolStatus, jdbcType = INTEGER},
+			#{patrolType, jdbcType = INTEGER},
+			#{patrolNum, jdbcType = INTEGER}
+		);		
+    </insert>
+    
+    <!-- 根据巡查id更新-巡查任务 -->
+    <update id="updatePatrol" parameterType="java.util.Map">
+    	update patrol
+    	<trim prefix="set" suffixOverrides=",">
+    	<if test="userId!=null" >
+    		user_id = #{userId},
+    	</if>
+    	<if test="patrolStatus!=null" >
+    		patrol_status = #{patrolStatus},
+    	</if>
+    	<if test="point!=null and point!=''" >
+    		point = #{point}
+    	</if>
+    	</trim>
+    	WHERE patrol_id= #{patrolId}    
+    </update>
+    
+	    <!-- 根据巡查id删除巡查任务 -->
+    <update id="deletePatrol" parameterType="java.lang.Integer">
+    	update patrol set patrol_status=0 WHERE patrol_id= #{patrolId}    
+    </update>
+    
+    <select id="countPatrol" resultType="java.lang.Integer" parameterType="java.util.Map">
+    	select count(*) 
+		from patrol p
+		left join user u on p.user_id=u.user_id left join river ri on p.river_id=ri.river_id
+		<where>
+		<if test="regionIds!=null and regionIds!='' and regionIds!='undefined'.toString()">
+			and p.river_id in (select ri.river_id from river ri where ri.region_id in
+    			<foreach collection="regionIds" item="item"  open="(" close=")" index="index" separator=",">  
+    			#{item}
+				</foreach>
+				)
+		</if>
+		<if test="riverName!=null and riverName!='' and riverName!='undefined'.toString()">
+			and ri.river_name like '%${riverName}%'
+		</if>
+		<if test="taskName!=null and taskName!='' and taskName!='undefined'.toString()">
+			and p.task_name like '%${taskName}%'
+		</if>
+		<if test="userName!=null and userName!='' and userName!='undefined'.toString()">
+			and u.real_name=#{userName}
+		</if>
+		<if test="patrolType!=null">
+			and p.patrol_type=#{patrolType}
+		</if>
+		<if test="startPublishTime!=null">
+ 			and  p.publish_time &gt;= #{startPublishTime,jdbcType = TIMESTAMP}
+ 		</if>
+ 		<if test="endPublishTime!=null">
+ 			 and p.publish_time &lt;= #{endPublishTime,jdbcType = TIMESTAMP}
+ 		</if>
+ 		<if test="appType==1">
+ 			and p.user_id = #{userId}
+ 		</if>
+ 		<if test="appType==2">
+			<if test="type==0">
+    			<if test="regionId!=null and regionId!='' and regionId!='undefined'.toString()">
+    				and p.region_id LIKE 
+				CONCAT((SELECT (
+				CASE WHEN r.level=0 THEN LEFT(region_id,0) 
+				WHEN r.level=1 THEN LEFT(region_id,2)
+				WHEN r.level=2 THEN LEFT(region_id,4)
+				WHEN r.level=3 THEN LEFT(region_id,6)
+				WHEN r.level=4 THEN LEFT(region_id,9)
+				WHEN r.level=5 THEN region_id
+				END)AS region_id
+				FROM region r WHERE region_id LIKE #{regionId}),'%')
+    			</if>
+    			<if test="riverId!=null and riverId!='' and riverId!='undefined'.toString()">
+    				and p.river_id LIKE 
+				CONCAT((SELECT (
+				CASE WHEN r.river_level=0 THEN LEFT(river_id,2) 
+				WHEN r.river_level=1 THEN LEFT(river_id,4)
+				WHEN r.river_level=2 THEN LEFT(river_id,6)
+				WHEN r.river_level=3 THEN LEFT(river_id,8)
+				WHEN r.river_level=4 THEN LEFT(river_id,10)
+				WHEN r.river_level=5 THEN LEFT(river_id,12)
+				WHEN r.river_level=6 THEN river_id
+				END)AS river_id
+				FROM river r WHERE river_id LIKE #{riverId}),'%')
+    			</if>
+    		</if>
+ 		</if>
+			and p.patrol_status!=0
+		</where>
+    </select>
+    
+    <update id="updatePatrolNum" parameterType="java.lang.Integer">
+    	update patrol set patrol_num = patrol_num+1 where patrol_id= #{patrolId} 
+    </update>
+	
+</mapper>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="onemap.mapper.OnemapEventMapper">
+
+   <!-- 表所有字段 -->
+   <sql id="allColumns">
+        EVENT_ID, EVENT_NAME, EVENT_CODE, EVENT_LEVEL, REPORT_TYPE, EVENT_CONTENT, 
+        EVENT_POINT, ADDRESS, EVENT_TYPE, RIVER_ID, REGION_ID, PROBLEM_TYPE, 
+        EVENT_TIME, UPDATE_TIME, LIMIT_TIME, RECTIFICATION, USER_ID, EVENT_STATUS, 
+        REMARK
+    </sql>
+    
+    <!-- 根据code、regionId、riverId查询点坐标数据 -->
+    <select id="findEventAll" resultType="map" parameterType="map">
+        SELECT EVENT_ID as id,
+		SUBSTR(event_point FROM 2 FOR LOCATE(',',event_point)-2) AS x,
+		SUBSTR(event_point FROM LOCATE(',',event_point)+1 FOR (LENGTH(event_point)-LOCATE(',',event_point)-2)) AS y
+		FROM EVENT WHERE 1=1
+		<if test="reportTpye != null">
+            AND REPORT_TYPE = #{reportTpye}
+        </if>
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        <if test="riverId != null and riverId != ''">
+            AND RIVER_ID LIKE CONCAT( #{riverId},'%')
+        </if>
+    </select>
+    
+    <!-- 查询代办事件点坐标 -->
+    <select id="findEventPoint" resultType="map" parameterType="map">
+        SELECT EVENT_ID as id,
+		SUBSTR(event_point FROM 2 FOR LOCATE(',',event_point)-2) AS x,
+		SUBSTR(event_point FROM LOCATE(',',event_point)+1 FOR (LENGTH(event_point)-LOCATE(',',event_point)-2)) AS y
+		FROM EVENT WHERE event_status=1
+		<if test="eventIdList != null and eventIdList.size() > 0">
+			<foreach collection="eventIdList" open=" and event_id in (" close=")" item="id" separator=",">
+	            #{id}
+	        </foreach>
+        </if>
+    </select>
+    
+    
+	<!-- 根据id查询详细数据 -->
+    <select id="findEventById" resultType="map" parameterType="int">
+        SELECT  *,         
+		(SELECT region_name FROM region WHERE region.region_id=EVENT.REGION_ID) AS region_name,  
+		(SELECT river_name FROM river WHERE river.river_id=EVENT.river_id) AS river_name,
+		(SELECT user_name FROM `user` WHERE `user`.user_id=EVENT.user_id) AS user_name,
+		(DATE_FORMAT(EVENT_TIME,'%Y-%m-%d %H:%i:%s')) AS event_time_string,
+		(DATE_FORMAT(LIMIT_TIME,'%Y-%m-%d %H:%i:%s')) AS limit_time_string,
+		(SELECT name FROM dict WHERE `table`='event' AND field='report_type' AND code=EVENT.REPORT_TYPE) as report_type_name,
+		(SELECT name FROM dict WHERE `table`='event' AND field='event_level' AND code=EVENT.EVENT_LEVEL) as event_level_name,
+		(SELECT name FROM dict WHERE `table`='event' AND field='event_type' AND code=EVENT.EVENT_TYPE) as event_type_name
+        FROM EVENT WHERE EVENT_ID = #{eventId}
+    </select>
+    
+    
+    <select id="getEventStatisticsInformation" resultType="map" parameterType="map">
+    	SELECT COUNT(*) as count,
+		(SELECT region_name FROM region WHERE region.region_id=event.region_id) AS region_name,
+		(COUNT(*)/(SELECT COUNT(*) FROM event WHERE report_type LIKE CONCAT(#{reportTpye},'%'))*100) AS percentage 
+		FROM event WHERE REPORT_TYPE LIKE CONCAT(#{reportTpye},'%') GROUP BY region_id 
+    </select>
+    
+    
+    <select id="getPatrolPoint" resultType="map" parameterType="int">
+    	SELECT point from patrol_record WHERE patrol_record_id = #{id}
+    </select>
+    
+    
+    
+</mapper>

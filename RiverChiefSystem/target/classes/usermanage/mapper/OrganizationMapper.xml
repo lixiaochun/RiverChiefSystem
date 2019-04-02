@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace命名空间，作用就是对sql进行分类化管理，理解sql隔离
+注意：使用mapper代理方法开发，namespace有特殊重要的作用
+ -->
+<mapper namespace="usermanage.mapper.OrganizationMapper">
+    
+    <!-- 组织机构 -->
+	<resultMap type="common.model.Organization" id="organization">
+	 <id column="organization_id" property="organizationId" />
+        <result column="organization_code" property="organizationCode" />
+        <result column="organization_name" property="organizationName" />
+        <result column="organization_type" property="organizationType" />
+        <result column="region_id" property="regionId" />
+        <result column="region_name" property="regionName" />
+        <result column="level" property="level" />
+        <result column="level_name" property="levelName" />
+        <result column="parent_id" property="parentId" />
+        <result column="type_name" property="typeName" />
+        <result column="parent_name" property="parentName" />
+        <result column="is_parent" property="isParent" />
+    </resultMap>
+
+	<select id="queryOrgList" resultMap="organization" parameterType="java.util.Map">
+		select o.*,o1.organizationName as parent_name from 
+		(select o.* ,d.name as level_name, r.region_id as regionId,r.region_name as regionName<!-- ,d1.name as type_name -->
+		from organization o left join dict d on d.code = o.level left join region r on r.region_id = o.region_id 
+		left join dict d1 on d1.code = o.organization_type
+		<where>
+		<if test="organizationId!=null">
+			and o.organization_id=#{organizationId}
+		</if>
+		<if test="organizationCode!=null and organizationCode!='undefined'.toString()">
+			and o.organization_code=#{organizationCode}
+		</if>
+		<if test="organizationName!=null and organizationName!='undefined'.toString()">
+			and o.organization_name like '%${organizationName}%'
+		</if>
+		<if test="organizationType!=null and organizationType!='undefined'.toString()">
+			and o.organization_type like '%${organizationType}%'
+		</if>
+		<if test="regionName!=null and regionName!='undefined'.toString()">
+			and o.region_id in (SELECT (
+			CASE WHEN r.level=0 THEN LEFT(region_id,0) 
+			WHEN r.level=1 THEN LEFT(region_id,2)
+			WHEN r.level=2 THEN LEFT(region_id,4)
+			WHEN r.level=3 THEN LEFT(region_id,6)
+			WHEN r.level=4 THEN LEFT(region_id,9)
+			WHEN r.level=5 THEN region_id
+			END)AS region_id FROM region r WHERE r.region_name LIKE '%${regionName}%')
+		</if>
+		<if test="regionId!=null and regionId!='undefined'.toString()">
+			and o.region_id 
+			<!-- = #{regionId} -->
+			LIKE 
+			CONCAT((SELECT (
+			CASE WHEN r.level=0 THEN LEFT(region_id,0) 
+			WHEN r.level=1 THEN LEFT(region_id,2)
+			WHEN r.level=2 THEN LEFT(region_id,4)
+			WHEN r.level=3 THEN LEFT(region_id,6)
+			WHEN r.level=4 THEN LEFT(region_id,9)
+			WHEN r.level=5 THEN region_id
+			END)AS region_id
+			FROM region r WHERE region_id LIKE #{regionId}),'%')
+		</if>
+		<if test="organizationType!=null and organizationType!='undefined'.toString()">
+			and o.organization_type =  #{organizationType}
+		</if>
+		<if test="level!=null and level!='undefined'.toString()">
+			and o.level=#{level}
+		</if>
+		<if test="parentId!=null">
+			and o.parent_id=#{parentId}
+		</if>
+		and d.field = 'level' and d1.field = 'organization_type'
+		) o left join (select organization_id,organization_name as organizationName from organization) o1 on o1.organization_id=o.parent_id
+		<!-- left join (select region_id ,region_name from region )  r on o1.region_id = r.region_id
+		left join (select name,code from dict where field = 'level') d on d.code = o.level -->
+		order by organization_id asc
+		</where>
+		<if test="min!=null and pageSize!=null">
+ 			LIMIT #{min},#{pageSize}
+ 		</if>
+	</select>
+	
+	<select id="queryOrganization" resultMap="organization" parameterType="java.util.Map">
+		select o.* from organization o 
+		<where>
+		<if test="organizationId!=null">
+			and o.organization_id=#{organizationId}
+		</if>
+		</where>
+	</select>
+	
+	<select id="countOrganization" resultType="java.lang.Integer" parameterType="java.util.Map">
+		select count(*) from organization o left join dict d on d.code = o.level
+		<where>
+		<if test="organizationId!=null and organizationId!='undefined'.toString()">
+			and o.organization_id=#{organizationId}
+		</if>
+		<if test="organizationCode!=null and organizationCode!='undefined'.toString()">
+			and o.organization_code=#{organizationCode}
+		</if>
+		<if test="organizationName!=null and organizationName!='undefined'.toString()">
+			and o.organization_name like '%${organizationName}%'
+		</if>
+		<if test="organizationType!=null and organizationType!='undefined'.toString()">
+			and o.organization_type = #{organizationType}
+		</if>
+		<if test="regionName!=null and regionName!='undefined'.toString()">
+			and o.region_id in (SELECT (
+			CASE WHEN r.level=0 THEN LEFT(region_id,0) 
+			WHEN r.level=1 THEN LEFT(region_id,2)
+			WHEN r.level=2 THEN LEFT(region_id,4)
+			WHEN r.level=3 THEN LEFT(region_id,6)
+			WHEN r.level=4 THEN LEFT(region_id,9)
+			WHEN r.level=5 THEN region_id
+			END)AS region_id FROM region r WHERE r.region_name LIKE '%${regionName}%')
+		</if>
+		<if test="regionId!=null and regionId!='undefined'.toString()">
+			and o.region_id LIKE 
+			CONCAT('%',(SELECT (
+			CASE WHEN r.level=0 THEN LEFT(region_id,0) 
+			WHEN r.level=1 THEN LEFT(region_id,2)
+			WHEN r.level=2 THEN LEFT(region_id,4)
+			WHEN r.level=3 THEN LEFT(region_id,6)
+			WHEN r.level=4 THEN LEFT(region_id,9)
+			WHEN r.level=5 THEN region_id
+			END)AS region_id
+			FROM region r WHERE region_id LIKE #{regionId}),'%')
+		</if>
+		<if test="level!=null and level!='undefined'.toString()">
+			and o.level=#{level}
+		</if>
+		<if test="parentId!=null and parentId!='undefined'.toString()">
+			and o.parent_id=#{parentId}
+		</if>
+		and d.field = 'level'
+		</where>
+	</select>
+	
+	<insert id="newOrganization" parameterType="organization"  useGeneratedKeys="true" keyProperty="organizationId">
+    	INSERT INTO organization( organization_code , organization_name , organization_type , region_id , level , parent_id,is_parent )
+		VALUES (
+			#{organizationCode, jdbcType = VARCHAR},
+			#{organizationName, jdbcType = VARCHAR},
+			#{organizationType, jdbcType = VARCHAR},
+			#{regionId, jdbcType = INTEGER},
+			#{level, jdbcType = INTEGER},
+			#{parentId, jdbcType = INTEGER},
+			#{isParent, jdbcType = INTEGER}
+		)
+    </insert>
+    
+    <select id="selectOrganizationId" resultType="java.lang.Integer">
+    	select MAX(organization_id) from organization
+    </select>
+    
+    <insert id="insertOrganization" parameterType="java.util.List">
+    	<selectKey resultType="java.lang.Integer" keyProperty="id" order="AFTER">
+			SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO organization(organization_id ,organization_code , organization_name ,
+		organization_type , region_id , is_parent ,level , parent_id )
+		values
+		<foreach collection="list" item="organization" index="index" separator=",">
+		(
+			#{organization.organizationId, jdbcType = INTEGER},
+			#{organization.organizationCode, jdbcType = VARCHAR},
+			#{organization.organizationName, jdbcType = VARCHAR},
+			#{organization.organizationType, jdbcType = VARCHAR},
+			#{organization.regionId, jdbcType = VARCHAR},
+			#{organization.level, jdbcType = INTEGER},
+			#{organization.isParent, jdbcType = INTEGER},
+			#{organization.parentId, jdbcType = INTEGER}
+		)
+		</foreach>
+    </insert>
+    
+    <update id="updateOrganization" parameterType="java.util.List">
+    	<foreach collection="list" item="organization" index="index" separator=";">  
+                update organization   
+                <set>   
+                organization_code=#{organization.organizationCode, jdbcType = VARCHAR},
+				organization_name=#{organization.organizationName, jdbcType = VARCHAR},
+				organization_type=#{organization.organizationType, jdbcType = VARCHAR},
+				region_id=#{organization.regionId, jdbcType = VARCHAR},
+				level=#{organization.level, jdbcType = INTEGER},
+				is_parent=#{organization.isParent, jdbcType = INTEGER},
+				parent_id=#{organization.parentId, jdbcType = INTEGER}  
+                </set>  
+                where organization_id = #{organization.organizationId,jdbcType=INTEGER} 
+         </foreach>  
+    
+    	 <!-- update organization 
+    	set  
+    	<foreach collection="list" item="organization" index="index" separator=",">
+			organization_code=#{organization.organizationCode, jdbcType = VARCHAR},
+			organization_name=#{organization.organizationName, jdbcType = VARCHAR},
+			organization_type=#{organization.organizationType, jdbcType = VARCHAR},
+			region_id=#{organization.regionId, jdbcType = VARCHAR},
+			level=#{organization.level, jdbcType = INTEGER},
+			is_parent=#{organization.isParent, jdbcType = INTEGER},
+			parent_id=#{organization.parentId, jdbcType = INTEGER}
+    	</foreach>
+    	where organization_id in 
+    	<foreach collection="list" index="index" item="organization" open="(" separator="," close=")">    
+        	#{organization.organizationId,jdbcType=INTEGER}
+    	</foreach> -->
+    </update>
+</mapper>

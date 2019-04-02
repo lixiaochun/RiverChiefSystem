@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- PUBLICSIGNS -->
+<mapper namespace="newonemap.mapper.PublicSignsMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BasicInformation" type="newonemap.model.BasicInformation">
+        <id column="id" property="id" jdbcType="VARCHAR" />
+        <result column="name" property="name" jdbcType="VARCHAR" />
+        <result column="x" property="x" jdbcType="DOUBLE" />
+        <result column="y" property="y" jdbcType="DOUBLE" />
+        <result column="type" property="type" jdbcType="VARCHAR" />
+    </resultMap>
+    
+    <!-- 结果映射 -->
+    <resultMap id="Publicsigns" type="newonemap.model.Publicsigns">
+        <result column="name" property="name" jdbcType="VARCHAR" />
+        <result column="region_name" property="regionName" jdbcType="VARCHAR" />
+        <result column="riverchief" property="riverchief" jdbcType="VARCHAR" />
+        <result column="rivemanager" property="rivemanager" jdbcType="VARCHAR" />     
+        <result column="duty" property="duty" jdbcType="VARCHAR" />
+        <result column="target" property="target" jdbcType="VARCHAR" />
+        <result column="hotline" property="hotline" jdbcType="VARCHAR" />
+        <result column="imgurl" property="imgurl" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <!-- 表所有字段 -->
+    <sql id="allColumns">
+        id,code,name,base_info_type,region_id,river_name,
+        basin_name,longitute,latitude,
+        riverchief,rivemanager,department,duty,target,
+        hotline,imgurl
+    </sql>
+    <!-- 根据code查询点坐标数据 -->
+    <select id="findPublicsignsBasicInformation" resultMap="BasicInformation"  parameterType="map">
+        SELECT
+        id, name,longitute as x, latitude as y,base_info_type as type
+        FROM onemap_publicsigns
+        <if test="type != null and type != ''">
+            WHERE base_info_type LIKE CONCAT( #{type},'%')
+        </if>
+    </select>
+
+    <!-- 根据id查询详细数据 -->
+    <select id="findPublicsignsById"  resultMap="Publicsigns" parameterType="map">
+		SELECT name, (SELECT region_name FROM region WHERE region.region_id=onemap_publicsigns.region_id) AS region_name,
+		riverchief,rivemanager,duty,target,hotline,imgurl
+       FROM onemap_publicsigns WHERE id = #{id}
+    </select>
+    
+</mapper>

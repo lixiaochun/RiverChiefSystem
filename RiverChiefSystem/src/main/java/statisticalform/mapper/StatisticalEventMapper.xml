@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+ <mapper namespace="statisticalform.mapper.StatisticalEventMapper">
+ 	 <resultMap type="common.model.Statistics" id="statistics">
+        <result column="pt" property="pt" />
+        <result column="count" property="count" />
+        <result column="percent" property="percent" />
+        <result column="problemTypeName" property="problemTypeName" />
+        <result column="regionId" property="regionId" />
+        <result column="regionName" property="regionName" />
+        <result column="reportTypeName" property="reportTypeName" />
+        <result column="date" property="date" />
+        <result column="dateType" property="dateType" />
+        <result column="longitute" property="longitute" />
+        <result column="latitude" property="latitude" />
+    </resultMap>
+    
+    <sql id="selectdateType">
+    	<if test="dateType==1">
+    		<!-- 今日 -->
+    		and to_days(event_time) = to_days(now())
+    	</if>
+    	<if test="dateType==2">
+    		<!-- 本周 -->
+    		and YEARWEEK(date_format(event_time,'%Y-%m-%d')) = YEARWEEK(now())
+    	</if>
+    	<if test="dateType==3">
+    		<!-- 本月 -->
+    		and DATE_FORMAT( event_time, '%Y%m' ) = DATE_FORMAT( CURDATE( ) , '%Y%m' )
+    	</if>
+    	<if test="dateType==4">
+    		<!-- 上个月 -->
+    		and PERIOD_DIFF( date_format( now( ) , '%Y%m' ) , date_format( event_time, '%Y%m' ) ) =1
+    	</if>
+    	<if test="dateType==5">
+    		<!-- 本年度 -->
+    		and YEAR(event_time)=YEAR(NOW())
+    	</if>
+    </sql>
+    
+	<select id="statisticsProblemType" resultType="java.util.Map" parameterType="java.util.Map">
+		<!-- 查询event的事件问题类型 -->
+		select dd.pt as pt,dd.problemTypeName as problemTypeName,if(pp.count is null,0,pp.count) as count,
+		if(pp.count/tt.total is null,'0.0%',CONCAT((pp.count/tt.total*100),'%')) as percent from (
+		select d.code as pt ,d.name as problemTypeName from dict d where d.field='problem_type' 
+		and d.code = CONCAT(LEFT(d.code,2),'00')
+		) dd
+		LEFT JOIN
+		(select count(e.event_id) as count,d.code as pt
+ 		from event e left join dict d on d.code = CONCAT(LEFT(e.problem_type,2),'00')
+ 		 where d.field='problem_type' 
+			<if test="regionIds!=null">  
+             and e.region_id in  
+             <foreach collection="regionIds" item="item"  open="(" close=")" index="index" separator=",">  
+                 #{item}  
+             </foreach>  
+         	</if>  
+         	<if test="regionId">
+         	and e.region_id = #{regionId}
+         	</if>
+         	<if test="riverIds!=null">
+         	and
+         		<foreach collection="riverIds" item="item"  open="(" close=")" index="index" separator=" or ">  
+                 e.river_id like 
+                 CONCAT((SELECT (
+				CASE WHEN rr.river_level=0 THEN LEFT(river_id,2)
+				WHEN rr.river_level=1 THEN LEFT(river_id,4)
+				WHEN rr.river_level=2 THEN LEFT(river_id,6)
+				WHEN rr.river_level=3 THEN LEFT(river_id,8)
+				WHEN rr.river_level=4 THEN LEFT(river_id,10)
+				WHEN rr.river_level=5 THEN LEFT(river_id,12)
+				WHEN rr.river_level=6 THEN LEFT(river_id,14)
+				END)AS river_id
+				FROM river rr WHERE rr.river_id LIKE #{item}),'%')
+             	</foreach>  
+         	</if> 
+			<if test="dateType!=null">
+				<include refid="selectdateType" />
+			</if>
+		GROUP BY d.code) pp 
+		ON pp.pt=dd.pt , (select count(*) as total from event e 
+		<where>
+			<if test="regionIds!=null">  
+             and e.region_id in  
+             <foreach collection="regionIds" item="item"  open="(" close=")" index="index" separator=",">  
+                 #{item}  
+             </foreach>  
+         	</if>   
+         	<if test="regionId">
+         	and e.region_id = #{regionId}
+         	</if>
+         	<if test="riverIds!=null">
+         	and
+         		<foreach collection="riverIds" item="item"  open="(" close=")" index="index" separator=" or ">  
+                 e.river_id like 
+                 CONCAT((SELECT (
+				CASE WHEN rr.river_level=0 THEN LEFT(river_id,2)
+				WHEN rr.river_level=1 THEN LEFT(river_id,4)
+				WHEN rr.river_level=2 THEN LEFT(river_id,6)
+				WHEN rr.river_level=3 THEN LEFT(river_id,8)
+				WHEN rr.river_level=4 THEN LEFT(river_id,10)
+				WHEN rr.river_level=5 THEN LEFT(river_id,12)
+				WHEN rr.river_level=6 THEN LEFT(river_id,14)
+				END)AS river_id
+				FROM river rr WHERE rr.river_id LIKE #{item}),'%')
+             	</foreach>  
+         	</if> 
+			<if test="dateType!=null">
+				<include refid="selectdateType" />
+			</if> 
+		</where>) tt
+		<if test="orderby==null">
+			ORDER BY dd.pt
+		</if>
+		<if test="orderby!=null">
+			order by count desc limit 0,3
+		</if>
+	</select>
+	
+	<select id="statisticsEventCount" resultType="java.util.Map" parameterType="java.util.Map">
+		<!-- 查询event的事件问题类型 -->
+		select r.region_id as regionId , r.region_name as regionName,if(e.count is null,0,e.count) as count from 
+		(select * from region 
+		<where> 
+			<if test="regionIds!=null">  
+             and region_id in  (
+             <foreach collection="regionIds" item="item" index="index" separator=",">  
+                 #{item}  
+             </foreach>  
+             )
+         	</if>
+        </where>
+        )r LEFT JOIN 
+        (select count(*) as count,region_id from event e 
+		<where>
+			<if test="regionIds!=null">  
+             and e.region_id in  (
+             <foreach collection="regionIds" item="item" index="index" separator=",">  
+                 #{item}  
+             </foreach>  
+             )
+         	</if>   
+			<if test="dateType!=null">
+				<include refid="selectdateType" />
+			</if> 
+		</where>
+		GROUP BY e.region_id) e on r.region_id = e.region_id 
+		ORDER BY r.region_id asc
+	</select>
+    
+    <select id="statisticalReportType" parameterType="java.util.Map" resultType="java.util.Map">
+    	select d.name as reportTypeName ,count(1) as count, 
+ 		concat(left(count(1)/t1.total *100,5),'%')as percent 
+ 		from event e , dict d , (select count(*)as total from event  
+ 		<where>
+ 		<if test="regionIds!=null">  
+             and region_id in  
+             <foreach collection="regionIds" item="item"  open="(" close=")" index="index" separator=",">  
+                 #{item}  
+             </foreach>  
+         	</if>
+		<if test="dateType!=null">
+			<include refid="selectdateType" />
+		</if>
+		</where>
+		) t1 
+		<where>
+			<if test="regionIds!=null">  
+             and region_id in  
+             <foreach collection="regionIds" item="item"  open="(" close=")" index="index" separator=",">  
+                 #{item}  
+             </foreach>  
+         	</if>   
+		<if test="dateType!=null">
+			<include refid="selectdateType" />
+		</if>
+			and d.field='report_type' 
+		and d.code=e.report_type GROUP BY(report_type)
+		</where>
+		union 
+		select d.name as reportTypeName ,'0' as count, '0.0%' as percent 
+		from dict d where d.field='report_type' 
+		and d.code not in(select DISTINCT(report_type) from event 
+		<where>
+			<if test="regionIds!=null">  
+             and region_id in  
+             <foreach collection="regionIds" item="item"  open="(" close=")" index="index" separator=",">  
+                 #{item}  
+             </foreach>  
+         	</if>  
+		<if test="dateType!=null">
+			<include refid="selectdateType" />
+		</if>
+		</where>
+		) 
+ 		GROUP BY(d.code)
+    </select>
+    
+    <sql id="selectEveryDateType">
+    	<if test="dateType==1">
+        select 1 as eday union select 2 union select 3 union select 4 union select 5 
+             union select 6 union select 7 union select 8 union select 9 union select 10 
+             union select 11 union select 12 union select 13 union select 14 union select 15 
+        	 union select 16 union select 17 union select 18 union select 19 union select 20 
+             union select 21 union select 22 union select 23 union select 24
+        </if>
+        <if test="dateType==3">
+		select 1 as eday union select 2 union select 3 union select 4 union select 5 
+              union select 6 union select 7 union select 8 union select 9 union select 10 
+              union select 11 union select 12 union select 13 union select 14 union select 15 
+              union select 16 union select 17 union select 18 union select 19 union select 20 
+              union select 21 union select 22 union select 23 union select 24 union select 25 
+              union select 26 union select 27 union select 28 union select 29 union select 30 
+              union select 31
+		</if>
+		<if test="dateType==5">
+		select 1 as eday union select 2 union select 3 union select 4 union select 5 
+              union select 6 union select 7 union select 8 union select 9 union select 10 
+              union select 11 union select 12
+		</if>
+    </sql>
+    
+    <select id="everyEventCount" parameterType="java.util.Map" resultType="java.util.Map">
+    	select dd.eday as date,if(ep.c is null, 0, ep.c)as count from (	
+        <if test="dateType!=null">
+        	<include refid="selectEveryDateType" />
+		</if>
+		) dd
+		left join (
+		select 
+		<if test="dateType!=null">
+			<if test="dateType==1">
+				DATE_FORMAT(e.event_time, '%k') d , 
+			</if>
+			<if test="dateType==3">
+				DATE_FORMAT(e.event_time, '%e') d , 
+			</if>
+			<if test="dateType==5">
+				DATE_FORMAT(e.event_time, '%m') d , 
+			</if>
+		</if>
+		COUNT(*) c from  event e
+		<where>
+		<if test="regionIds!=null">  
+            and e.region_id in  
+            <foreach collection="regionIds" item="item"  open="(" close=")" index="index" separator=",">  
+               #{item}  
+            </foreach>  
+        </if>  
+		<if test="dateType!=null">
+			<if test="dateType==1">
+				and DATE(e.event_time)=DATE(NOW())
+			</if>
+			<if test="dateType==3">
+				and MONTH(e.event_time) = MONTH(NOW())
+			</if>
+			<if test="dateType==5">
+				and YEAR(e.event_time) = YEAR(NOW())
+			</if>
+		</if>
+		</where> 
+		group by d) ep 
+		on ep.d = dd.eday ORDER BY date asc
+    </select>
+    <select id="beforeEventCount" parameterType="java.util.Map" resultType="java.util.Map">
+    	select dd.eday as date,if(ep.c is null, 0, ep.c)as count from (	
+        <if test="dateType!=null">
+        	<include refid="selectEveryDateType" />
+		</if>
+		) dd
+		left join (
+		select 
+		<if test="dateType!=null">
+			<if test="dateType==1">
+				DATE_FORMAT(e.event_time, '%k') d , 
+			</if>
+			<if test="dateType==3">
+				DATE_FORMAT(e.event_time, '%e') d , 
+			</if>
+			<if test="dateType==5">
+				DATE_FORMAT(e.event_time, '%m') d , 
+			</if>
+		</if>
+		COUNT(*) c from  event e
+		<where>
+		<if test="regionIds!=null">  
+            and e.region_id in  
+            <foreach collection="regionIds" item="item"  open="(" close=")" index="index" separator=",">  
+               #{item}  
+            </foreach>  
+        </if>  
+		<if test="dateType!=null">
+			<if test="dateType==1">
+				and (to_days(now())-to_days(e.event_time))&lt;= 1
+			</if>
+			<if test="dateType==3">
+				and period_diff(date_format(now(),'%y%m'),date_format(e.event_time,'%y%m')) =1
+			</if>
+			<if test="dateType==5">
+				and year(e.event_time)=year(date_sub(now(),interval 1 year))
+			</if>
+		</if>
+		</where> 
+		group by d) ep 
+		on ep.d = dd.eday ORDER BY date asc
+    </select>
+    
+    <select id="publicComplaints" parameterType="java.util.Map" resultType="java.util.Map">
+    	select if(e.c is null,0,e.c) as count,r.region_id as regionId , r.region_name as regionName,r.longitute,r.latitude
+    	 from (select * from region 
+    	<where>
+    		<if test="regionId!=null">
+    			and parent_id = #{regionId}
+    		</if>
+    	</where>
+    	) r left join 
+		(select count(*) as c, r.region_id from event e ,region r where e.report_type=3 
+			<if test="regionId!=null">
+    			and parent_id = #{regionId}
+    		</if> 
+		and r.region_id=e.region_id GROUP BY r.region_id)e on e.region_id= r.region_id ORDER BY r.region_id asc
+    </select>
+    
+    <select id="statisticsProblemTypes" parameterType="java.util.Map" resultType="java.util.Map">
+    	select dd.pt as pt,dd.problemTypeName as problemTypeName,if(pp.count is null,0,pp.count) as count,
+		if(pp.count/tt.total is null,'0.0%',CONCAT((pp.count/tt.total*100),'%')) as percent from (
+		select d.code as pt ,d.name as problemTypeName from dict d where d.field='problem_type' 
+		and d.code = CONCAT(LEFT(d.code,2),'00')
+		) dd
+		LEFT JOIN
+		(select SUM(cc.count) as count ,d.code as pt from 
+		(select count(DISTINCT e.event_id) as count,d.code as pt
+ 		from event e left join dict d on e.problem_type like CONCAT('%',d.code,'%')
+ 		 where d.field='problem_type' and e.event_status =1
+ 		 	<if test="eventIds!=null">  
+             and e.event_id in  
+             <foreach collection="eventIds" item="item"  open="(" close=")" index="index" separator=",">  
+                 #{item}  
+             </foreach>  
+         	</if>  
+		GROUP BY LEFT(d.code,2))cc,dict d where d.code = CONCAT(LEFT(cc.pt,2),'00') GROUP BY d.code) pp 
+		ON pp.pt=dd.pt , (select count(*) as total from event e where e.event_status=1
+			<if test="eventIds!=null">  
+             and e.event_id in  
+             <foreach collection="eventIds" item="item"  open="(" close=")" index="index" separator=",">  
+                 #{item}  
+             </foreach>  
+         	</if>  
+		) tt
+		ORDER BY dd.pt
+    </select>
+    
+    <select id="statisticsEventType" parameterType="java.util.Map" resultType="java.util.Map">
+    	select dd.code,dd.name as sanTypeName,if(tt.count is null,0,tt.count) as count,
+		if(tt.count/pp.total is null,'0.0%',CONCAT((tt.count/pp.total*100),'%')) as percent
+		from(select * from dict d where d.field='san_type')dd left join
+		(select count(e.event_id) as count,d.code as code ,d.name as sanTypeName from event e 
+		left join dict d on d.code = e.san_type
+		where d.field='san_type' GROUP BY d.code)tt on dd.code = tt.code,
+		(select count(*) as total from event) pp GROUP BY dd.code
+    </select>
+</mapper>

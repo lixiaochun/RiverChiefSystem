@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- WATER_QUALITY -->
+<mapper namespace="onemap.mapper.WaterQualityMapper">
+    
+    <!-- 表所有字段 -->
+    <sql id="allColumns">
+        WATER_QUALITY_ID, NAME, SECTION_LEVEL, MONITOR_TYPE, REGION_ID, RIVER_ID, 
+        LONGITUTE, LATITUDE, REQUIREMENT, BASE_INFO_TYPE, POLLUTION_INDEX, IMGURL, 
+        MODEL, REMARK, WARNING
+    </sql>
+    
+    <!-- 根据code、regionId、riverId查询点坐标数据 -->
+    <select id="findWaterQualityAll" resultType="map" parameterType="map">
+        SELECT
+        WATER_QUALITY_ID as id, LONGITUTE as x, LATITUDE as y,warning as warn
+        FROM WATER_QUALITY WHERE 1=1
+        <if test="code != null and code != 0">
+            AND BASE_INFO_TYPE LIKE CONCAT( #{code},'%')
+        </if>
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        <if test="riverId != null and riverId != ''">
+            AND RIVER_ID LIKE CONCAT( #{riverId},'%')
+        </if>
+    </select>
+    
+	<!-- 根据id查询详细数据 -->
+    <select id="findWaterQualityById" resultType="map" parameterType="int">
+        SELECT *,CONCAT( LONGITUTE,',',LATITUDE) as point,
+        (SELECT value FROM base_info_type WHERE base_info_type.code=WATER_QUALITY.requirement) AS requirement_name,
+		(SELECT value FROM base_info_type WHERE base_info_type.code=WATER_QUALITY.base_info_type) AS type_name,
+        (SELECT region_name FROM region WHERE region.region_id=WATER_QUALITY.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=WATER_QUALITY.river_id) AS river_name
+        FROM WATER_QUALITY WHERE WATER_QUALITY_ID  = #{waterQualityId}
+    </select>
+    
+    <!-- 根据code、regionId分页查询详细数据列表 -->
+    <select id="findWaterQualityByPage" resultType="map" parameterType="map">
+        SELECT *,WATER_QUALITY_ID as id,
+        (SELECT value FROM base_info_type WHERE base_info_type.code=WATER_QUALITY.requirement) AS requirement_name,
+		(SELECT value FROM base_info_type WHERE base_info_type.code=WATER_QUALITY.base_info_type) AS type_name,
+        (SELECT region_name FROM region WHERE region.region_id=WATER_QUALITY.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=WATER_QUALITY.river_id) AS river_name
+        FROM WATER_QUALITY WHERE 1=1
+        <if test="code != null and code != 0">
+            AND BASE_INFO_TYPE LIKE CONCAT( #{code},'%')
+        </if>
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        LIMIT ${curPage},${pageNumber}
+    </select>
+    
+    <!-- 获取分页查询详情 count总数 page总页数-->
+    <select id="getPagingInformation" resultType="map" parameterType="map">
+		SELECT COUNT(*) AS count,
+		CEILING(COUNT(*)/${pageNumber}) AS page 
+		FROM WATER_QUALITY WHERE 1=1
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+	</select>
+	
+    <select id="findMaxId" resultType="int" parameterType="int">
+        SELECT IFNULL(max(WATER_QUALITY_ID),0) from WATER_QUALITY
+    </select> 
+	
+	<!-- 统计水质信息 根据区域 -->
+	<select id="getStatisticsByRegionId" resultType="map">
+		SELECT COUNT(*) as count,
+		(SELECT region_name FROM region WHERE region.region_id=WATER_QUALITY.REGION_ID) AS region_name,
+		(COUNT(*)/(SELECT COUNT(*) FROM water_quality )*100) AS percentage 
+		FROM water_quality GROUP BY region_id
+	</select>
+	
+	<!-- 统计水质信息  根据水质类别 -->
+	<select id="getStatisticsByType" resultType="map" parameterType="map">
+		SELECT COUNT(*) as count,
+		(SELECT value FROM base_info_type WHERE base_info_type.code=WATER_QUALITY.base_info_type) AS type_name,
+		(COUNT(*)/(SELECT COUNT(*) FROM water_quality WHERE 1=1 
+		<if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>)*100) AS percentage
+		FROM water_quality WHERE 1=1
+		<if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        GROUP BY base_info_type
+	</select>
+    
+    <!-- 插入数据 -->
+    <insert id="insertWaterQuality" parameterType="map">
+        INSERT INTO WATER_QUALITY (<include refid="allColumns" />)
+        VALUES (
+            #{id},
+            #{name},
+            #{section_level},
+            #{monitor_type},
+            #{region_id},
+            #{river_id},
+            #{longitute},
+            #{latitude},
+            #{requirement},
+            #{base_info_type},
+            #{pollution_index},
+            #{imgurl},
+            #{model},
+            #{remark},
+            #{warning}
+        )
+    </insert>
+    
+    <!-- 修改数据 -->
+    <update id="updateWaterQuality" parameterType="map">
+        UPDATE WATER_QUALITY SET
+            NAME = #{name},
+            SECTION_LEVEL = #{section_level},
+            MONITOR_TYPE = #{monitor_type},
+            REGION_ID = #{region_id},
+            RIVER_ID = #{river_id},
+            LONGITUTE = #{longitute},
+            LATITUDE = #{latitude},
+            REQUIREMENT = #{requirement},
+            BASE_INFO_TYPE = #{base_info_type},
+            POLLUTION_INDEX = #{pollution_index},
+            IMGURL = #{imgurl},
+            MODEL = #{model},
+            REMARK = #{remark},
+            WARNING = #{warning}
+        WHERE WATER_QUALITY_ID = #{id}
+    </update>
+    
+    <!-- 根据主键删除数据 -->
+    <delete id="deleteWaterQualityById" parameterType="int">
+        DELETE FROM WATER_QUALITY WHERE WATER_QUALITY_ID = #{waterQualityId}
+    </delete>
+
+    
+</mapper>

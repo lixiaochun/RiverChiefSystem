@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- WATERLINE -->
+<mapper namespace="onemap.mapper.WaterSourceMapper">
+    
+    <!-- 表所有字段 -->
+    <sql id="allColumns">
+        WATER_SOURCE_ID, NAME, REGION_ID, RIVER_ID, NORMAL, FLOOD, 
+        LONGITUTE, LATITUDE, REMARK, WARNING
+    </sql>
+    
+    <!-- 根据code、regionId、riverId查询点坐标数据 -->
+	<select id="findWaterSourceAll" resultType="map" parameterType="map">
+		SELECT WATER_SOURCE_ID as id,LONGITUTE as x, LATITUDE as y,warning as warn
+		FROM WATER_SOURCE WHERE 1=1
+		<if test="code != null and code != 0">
+            AND BASE_INFO_TYPE LIKE CONCAT( #{code},'%')
+        </if>
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        <if test="riverId != null and riverId != ''">
+            AND RIVER_ID LIKE CONCAT( #{riverId},'%')
+        </if>
+	</select>
+
+	<!-- 根据id查询详细数据 -->
+	<select id="findWaterSourceById" resultType="map" parameterType="int">
+		SELECT *,CONCAT( LONGITUTE,',',LATITUDE) as point,
+		(SELECT region_name FROM region WHERE region.region_id=WATER_SOURCE.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=WATER_SOURCE.river_id) AS river_name
+		FROM WATER_SOURCE WHERE WATER_SOURCE_ID = #{waterSourceId}
+	</select>
+	
+    <!-- 根据code、regionId分页查询详细数据列表 -->
+	<select id="findWaterSourceByPage" resultType="map" parameterType="map">
+		SELECT *,WATER_SOURCE_ID as id,
+		(SELECT region_name FROM region WHERE region.region_id=WATER_SOURCE.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=WATER_SOURCE.river_id) AS river_name
+		FROM WATER_SOURCE WHERE 1=1
+		<if test="code != null and code != 0">
+            AND BASE_INFO_TYPE LIKE CONCAT( #{code},'%')
+        </if>
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        LIMIT ${curPage},${pageNumber}
+	</select>
+	
+	<!-- 获取分页查询详情 count总数 page总页数-->
+	<select id="getPagingInformation" resultType="map" parameterType="map">
+		SELECT COUNT(*) AS count,CEILING(COUNT(*)/${pageNumber}) AS page FROM WATER_SOURCE WHERE 1=1
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+	</select>
+	
+	<select id="findMaxId" resultType="int" parameterType="int">
+        SELECT IFNULL(max(WATER_SOURCE_ID),0) from WATER_SOURCE
+    </select>
+	
+    <!-- 插入数据 -->
+    <insert id="insertWaterSource" parameterType="map">
+        INSERT INTO WATER_SOURCE (<include refid="allColumns" />)
+        VALUES (
+            #{id},
+            #{name},
+            #{regionId},
+            #{riverId},
+            #{normal},
+            #{flood},
+            #{longitute},
+            #{latitude},
+            #{remark},
+            #{warning}
+        )
+    </insert>
+    
+    <!-- 修改数据 -->
+    <update id="updateWaterSource" parameterType="map">
+        UPDATE WATER_SOURCE SET
+            NAME = #{name},
+            REGION_ID = #{regionId},
+            RIVER_ID = #{riverId},
+            NORMAL = #{normal},
+            FLOOD = #{flood},
+            LONGITUTE = #{longitute},
+            LATITUDE = #{latitude},
+            REMARK = #{remark},
+            WARNING = #{warning}
+        WHERE WATER_SOURCE_ID = #{id}
+    </update>
+    
+    <!-- 根据主键删除数据 -->
+    <delete id="deleteWaterSourceById" parameterType="int">
+        DELETE FROM WATER_SOURCE WHERE WATER_SOURCE_ID = #{waterSourceId}
+    </delete>
+    
+</mapper>

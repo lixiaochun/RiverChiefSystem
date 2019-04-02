@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="filemanage.mapper.NoticeMapper">
+    <resultMap id="BaseResultMap" type="common.model.Notice">
+        <id column="notice_id" property="noticeId" jdbcType="INTEGER"/>
+        <result column="notice_title" property="noticeTitle" jdbcType="VARCHAR"/>
+        <result column="notice_level" property="noticeLevel" jdbcType="VARCHAR"/>
+        <result column="submit_time" property="submitTime" jdbcType="TIMESTAMP"/>
+        <result column="user_id" property="userId" jdbcType="INTEGER"/>
+        <result column="directory_id" property="directoryId" jdbcType="VARCHAR"/>
+        <result column="out_link" property="outLink" jdbcType="VARCHAR"/>
+        <result column="fount_img_url" property="fountImgUrl" jdbcType="VARCHAR"/>
+        <result column="summary" property="summary" jdbcType="VARCHAR"/>
+        <result column="user_open" property="userOpen" jdbcType="INTEGER"/>
+    </resultMap>
+    <resultMap id="ResultMapWithBLOBs" type="common.model.Notice" extends="BaseResultMap">
+        <result column="notice_body" property="noticeBody" jdbcType="LONGVARCHAR"/>
+    </resultMap>
+    <resultMap id="countMap" type="common.model.FileCount">
+        <result column="directory_id" property="directoryId" jdbcType="VARCHAR"/>
+        <result column="count(notice_id)" property="count" jdbcType="INTEGER"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+        notice_id, notice_title, notice_level, submit_time, user_id,directory_id,out_link,fount_img_url,summary,user_open
+  </sql>
+    <sql id="Blob_Column_List">
+    notice_body
+  </sql>
+    <select id="selectByTimeDesc" resultMap="ResultMapWithBLOBs" parameterType="java.lang.String">
+        SELECT * FROM notice where (fount_img_url is not NULL ) order BY submit_time DESC LIMIT 0,5;
+    </select>
+    <select id="selectByLevel" resultMap="ResultMapWithBLOBs" parameterType="java.lang.String">
+        SELECT * FROM notice where directory_id=#{directoryId} and notice_level >= #{level} order BY submit_time DESC
+    </select>
+    <select id="countInAWeek" resultType="java.lang.String" parameterType="java.lang.String">
+        select count(notice_id) FROM notice
+        <where>directory_id= #{directoryId} and
+            submit_time BETWEEN (select date_sub((select now()),interval 1 week)) and (select now());
+        </where>
+    </select>
+    <select id="countByDirectory" resultType="java.lang.String" parameterType="java.lang.String">
+        SELECT count(notice_id) FROM notice where directory_id= #{directoryId};
+    </select>
+    <select id="selectByDirectoryAndTitleWithTime" resultMap="BaseResultMap" parameterType="java.lang.String">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM notice
+        <where>
+            <if test="noticeLevel !=null and noticeLevel!=''">
+                and notice_level=#{noticeLevel}
+            </if>
+            <if test="startTime !=null and startTime !=''">
+                and submit_time BETWEEN '${startTime} 0:0:0'
+            </if>
+            <if test="endTime !=null and endTime !=''">
+                and '${endTime} 23:59:59'
+            </if>
+            <if test="directoryId != null and directoryId != ''">
+                directory_id like '${directoryId}%'
+            </if>
+            <if test="noticeTitle != null and noticeTitle !=''">
+                AND notice_title like '%${noticeTitle}%'
+            </if>
+        </where>
+        order BY submit_time desc;
+    </select>
+    <select id="selectByPrimaryKey" resultMap="ResultMapWithBLOBs" parameterType="java.lang.Integer">
+        select
+        <include refid="Base_Column_List"/>
+        ,
+        <include refid="Blob_Column_List"/>
+        from notice
+        where notice_id = #{noticeId,jdbcType=INTEGER}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from notice
+    where notice_id = #{noticeId,jdbcType=INTEGER}
+  </delete>
+    <insert id="insert" parameterType="common.model.Notice">
+    insert into notice (notice_id,notice_title,
+        notice_level, submit_time, user_id, directory_id,out_link,fount_img_url,summary,
+      notice_body,user_open)
+    values (#{noticeId,jdbcType=INTEGER}, #{noticeTitle,jdbcType=VARCHAR},
+        #{noticeLevel,jdbcType=VARCHAR}, #{submitTime,jdbcType=TIMESTAMP},
+        #{userId,jdbcType=INTEGER},#{directoryId,jdbcType=VARCHAR},#{outLink,jdbcType=VARCHAR},
+        #{fountImgUrl,jdbcType=VARCHAR},#{summary,jdbcType=VARCHAR},
+        #{noticeBody,jdbcType=LONGVARCHAR},#{userOpen,jdbcType=INTEGER})
+  </insert>
+
+    <update id="updateByPrimaryKeyWithBLOBs" parameterType="common.model.Notice">
+    update notice
+    set notice_title = #{noticeTitle,jdbcType=VARCHAR},
+      notice_level = #{noticeLevel,jdbcType=VARCHAR},
+      submit_time = #{submitTime,jdbcType=TIMESTAMP},
+      user_id = #{userId,jdbcType=INTEGER},
+      directory_id =#{directoryId,jdbcType=VARCHAR},
+        notice_body = #{noticeBody,jdbcType=LONGVARCHAR},
+        out_link=#{outLink,jdbcType=VARCHAR},
+        fount_img_url=#{fountImgUrl,jdbcType=VARCHAR},
+        summary=#{summary,jdbcType=VARCHAR},
+        user_open=#{userOpen,jdbcType=INTEGER}
+    where notice_id = #{noticeId,jdbcType=INTEGER}
+  </update>
+
+
+    <select id="selectNewsForPublic" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from notice
+        <where>
+            user_open=1 and directory_id=5
+        </where>
+        order by submit_time desc
+        limit #{numstart},#{size}
+    </select>
+    <select id="selectByPKForPublic" resultMap="ResultMapWithBLOBs">
+        select * from notice where notice_id=#{noticeId} and user_open=1
+    </select>
+    <select id="selectWithPicForPublic" resultMap="ResultMapWithBLOBs" parameterType="java.lang.String">
+        SELECT * FROM notice where user_open =1 and (fount_img_url is not NULL ) order BY submit_time DESC LIMIT 0,5;
+    </select>
+</mapper>

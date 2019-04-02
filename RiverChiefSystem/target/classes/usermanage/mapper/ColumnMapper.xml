@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace命名空间，作用就是对sql进行分类化管理，理解sql隔离
+注意：使用mapper代理方法开发，namespace有特殊重要的作用
+ -->
+<mapper namespace="usermanage.mapper.ColumnMapper">
+	<!-- 表字段 -->
+	<resultMap type="common.model.Column" id="column">
+	 <id column="column_name" property="columnName" />
+        <result column="column_comment" property="columnComment" />
+    </resultMap>
+    
+    <select id="queryColumn" resultMap="column" parameterType="java.util.Map">
+	SELECT
+	DISTINCT(CONCAT(
+	substring_index(column_name, '_', 1),
+
+	IF (
+	locate('_', column_name) > 0,
+	CONCAT(
+	UPPER(
+	SUBSTRING(
+	substring_index(column_name, '_', - 1),
+	1,
+	1
+	)
+	),
+	SUBSTRING(
+	substring_index(column_name, '_', - 1),
+	2,
+	LENGTH(
+	substring_index(column_name, '_', - 1)
+	)
+	)
+	),
+	''
+	)
+	)) AS column_name,
+	column_comment,
+	TABLE_NAME
+	FROM
+	INFORMATION_SCHEMA. COLUMNS
+	WHERE
+	table_name = #{tableName} and TABLE_SCHEMA='quanzhou'
+    </select>
+</mapper>

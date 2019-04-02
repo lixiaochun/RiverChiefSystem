@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="basemanage.mapper.BaseReachMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseReach" type="basemanage.model.BaseReach">
+        <id column="id" property="id" jdbcType="VARCHAR" />
+        <result column="name" property="name" jdbcType="VARCHAR" />
+        <result column="parent_id" property="parentId" jdbcType="VARCHAR" />
+        <result column="is_parent" property="isParent" jdbcType="VARCHAR" />
+        <result column="level" property="level" jdbcType="VARCHAR" />
+    </resultMap>
+    
+   	<!-- 结果映射 -->
+    <resultMap id="BaseReachInformation" type="basemanage.model.BaseReachInformation">
+        <id column="id" property="id" jdbcType="VARCHAR" />
+        <result column="name" property="name" jdbcType="VARCHAR" />
+        <result column="start_name" property="startName" jdbcType="VARCHAR" />
+        <result column="end_name" property="endName" jdbcType="VARCHAR" />
+        <result column="length" property="length" jdbcType="VARCHAR" />
+    </resultMap>
+    
+
+    <select id="selectBaseReach" resultMap="BaseReach" parameterType="map">
+        SELECT id,name,parent_id,is_parent,level
+        FROM base_reach where parent_id = #{id}
+    </select>
+    
+    <select id="selectBaseReachInformationById" resultMap="BaseReachInformation" parameterType="map">
+        SELECT id,name,start_name,end_name,length
+        FROM base_reach
+        <if test="id != null and id != ''">
+            WHERE id = #{id}
+        </if>
+    </select>
+    
+</mapper>

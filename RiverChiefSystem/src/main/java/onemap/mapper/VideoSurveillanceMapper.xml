@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- VIDEO_SURVEILLANCE -->
+<mapper namespace="onemap.mapper.VideoSurveillanceMapper">
+
+    <!-- 表所有字段 -->
+    <sql id="allColumns">
+        VIDEO_SURVEILLANCE_ID, NAME, REGION_ID, RIVER_ID, LONGITUTE, LATITUDE, IP_ADDRESS
+    </sql>
+    
+    <!-- 根据code、regionId、riverId查询点坐标数据 -->
+    <select id="findVideoSurveillanceAll" resultType="map" parameterType="map">
+        SELECT
+        VIDEO_SURVEILLANCE_ID as id, LONGITUTE as x, LATITUDE as y,name
+        FROM VIDEO_SURVEILLANCE WHERE 1=1
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        <if test="riverId != null and riverId != ''">
+            AND RIVER_ID LIKE CONCAT( #{riverId},'%')
+        </if>
+        <!-- 根据keyword进行模糊查询 -->
+        <if test="keyword != null">
+            AND NAME LIKE CONCAT( '%',#{keyword},'%')
+        </if>
+    </select>
+    
+	<!-- 根据id查询详细数据 -->
+    <select id="findVideoSurveillanceById" resultType="map" parameterType="int">
+		SELECT  *,CONCAT( LONGITUTE,',',LATITUDE) as point,
+        (SELECT region_name FROM region WHERE region.region_id=VIDEO_SURVEILLANCE.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=VIDEO_SURVEILLANCE.river_id) AS river_name
+        FROM VIDEO_SURVEILLANCE WHERE VIDEO_SURVEILLANCE_ID = #{videoSurveillanceId}
+    </select>
+    
+    <!-- 根据code、regionId分页查询详细数据列表 -->
+    <select id="findVideoSurveillanceByPage" resultType="map" parameterType="map">
+		SELECT  *,VIDEO_SURVEILLANCE_ID as id,
+        (SELECT region_name FROM region WHERE region.region_id=VIDEO_SURVEILLANCE.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=VIDEO_SURVEILLANCE.river_id) AS river_name
+        FROM VIDEO_SURVEILLANCE WHERE 1=1
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+        LIMIT ${curPage},${pageNumber}
+    </select>
+    
+    <!-- 查询所有数据 -->
+    <select id="getDetailInformationAllData" resultType="map" parameterType="map">
+		SELECT  *,VIDEO_SURVEILLANCE_ID as id, LONGITUTE as x, LATITUDE as y,
+        (SELECT region_name FROM region WHERE region.region_id=VIDEO_SURVEILLANCE.REGION_ID) AS region_name,
+		(SELECT river_name FROM river WHERE river.river_id=VIDEO_SURVEILLANCE.river_id) AS river_name
+        FROM VIDEO_SURVEILLANCE
+        <!-- 根据keyword进行模糊查询 -->
+        <if test="keyword != null">
+            WHERE NAME LIKE CONCAT( '%',#{keyword},'%')
+        </if>
+    </select>
+    
+    <!-- 获取分页查询详情 count总数 page总页数-->
+    <select id="getPagingInformation" resultType="map" parameterType="map">
+		SELECT COUNT(*) AS count,CEILING(COUNT(*)/${pageNumber}) AS page FROM VIDEO_SURVEILLANCE WHERE 1=1
+        <if test="regionId != null and regionId != ''">
+            AND REGION_ID LIKE CONCAT( #{regionId},'%')
+        </if>
+	</select>
+	
+    <select id="findMaxId" resultType="int" parameterType="int">
+        SELECT IFNULL(max(VIDEO_SURVEILLANCE_ID),0) from VIDEO_SURVEILLANCE
+    </select>
+    
+    <!-- 插入数据 -->
+    <insert id="insertVideoSurveillance" parameterType="map">
+        INSERT INTO VIDEO_SURVEILLANCE (<include refid="allColumns" />)
+        VALUES (
+            #{id},
+            #{name},
+            #{regionId},
+            #{riverId},
+            #{longitute},
+            #{latitude},
+            #{ipAddress}
+        )
+    </insert>
+    
+    <!-- 修改数据 -->
+    <update id="updateVideoSurveillance" parameterType="map">
+        UPDATE VIDEO_SURVEILLANCE SET
+            NAME = #{name},
+            REGION_ID = #{regionId},
+            RIVER_ID = #{riverId},
+            LONGITUTE = #{longitute},
+            LATITUDE = #{latitude},
+            IP_ADDRESS = #{ipAddress}
+        WHERE  VIDEO_SURVEILLANCE_ID = #{id}
+    </update>
+    
+    <!-- 根据主键删除数据 -->
+    <delete id="deleteVideoSurveillanceById" parameterType="int">
+        DELETE FROM VIDEO_SURVEILLANCE VIDEO_SURVEILLANCE_ID = #{videoSurveillanceId}
+    </delete>
+    
+    <update id="updateVideoSurveillanceByStatus" parameterType="map">
+        UPDATE VIDEO_SURVEILLANCE SET
+            status = #{status}
+        WHERE  VIDEO_SURVEILLANCE_ID = #{id}
+    </update>
+    
+</mapper>
