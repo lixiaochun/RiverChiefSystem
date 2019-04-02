@@ -1,0 +1,29 @@
+
+spring: 
+  datasource: 
+    driverClassName: com.mysql.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/clouddb01?useUnicode=true&amp;characterEncoding=utf-8
+    username: root
+    password: 123
+    type: com.alibaba.druid.pool.DruidDataSource
+  application:
+    name: microservicecloud-dept
+mybatis:
+  config-location: classpath:mybatis/mybatis.cfg.xml
+  mapper-locations: classpath:mybatis/mapper/*.xml
+  type-aliases-package:  com.atguigu.springcloud.entities
+server:
+  port: 8001
+
+eureka:
+  instance:
+    instance-id: microservicecloud-dept8001-hystrix
+    prefer-ip-address:  true
+  client: 
+    service-Url: 
+      defaultZone: http://eureka7001.com:7001/eureka/,http://eureka7002.com:7002/eureka/,http://eureka7003.com:7003/eureka/
+info: 
+  app.name: atguigu-microservicecloud
+  company.name: www.atguigu.com
+  build.artifactId:   SpringCloud-provider-dept-hystrix-8001
+  build.version: 0.0.1-SNAPSHOT
